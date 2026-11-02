@@ -1,97 +1,64 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# React Native starter
 
-# Getting Started
+A React Native CLI starter built from the priorities in [`setup.md`](setup.md). `App.tsx` is a working gallery for the reusable foundation; replace its example screens when starting a product.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
-
-## Step 1: Start Metro
-
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Run
 
 ```sh
-# Using npm
+npm install
 npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
 npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# On macOS, after installing or changing native packages:
+cd ios && pod install && cd ..
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+Quality checks:
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```sh
+npx tsc --noEmit
+npm run lint
+npm test -- --runInBand --watchman=false
+```
 
-## Step 3: Modify your app
+## Reuse
 
-Now that you have successfully run the app, let's make changes!
+Import UI, hooks, and services from `src/index.ts`. `AppThemeProvider` and `SafeAreaProvider` wrap the app in `App.tsx`; `AppToastProvider` enables `useAppToast`. `AppBottomSheetProvider` adds one sheet host for the whole app: call `useAppBottomSheet().showSheet({ title, children })` from any screen and `hideSheet()` to close it. Components use `Pressable`, `StyleSheet`, safe area insets, accessible labels, and theme tokens.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+| Area              | Included                                                                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Theme             | Light, dark, and system color modes; color, spacing, and radius tokens                                                                                               |
+| UI                | Text, buttons, icons, cards, dividers, badges, chips, avatars, progress, skeletons, tooltips, floating action button                                                 |
+| Forms             | Text and search inputs, checkbox, radio, switch, searchable select, native date/time and date range inputs, React Hook Form field, duplicate protected submit button |
+| Feedback          | Empty, error, loading, offline banner, dialog, global toast, reusable bottom sheet, error boundary                                                                   |
+| Screens and lists | Safe area screen, keyboard-aware scroll layout, list and list item                                                                                                   |
+| Navigation        | Typed native stack, four native bottom tabs with labels and badges, auth/app route grouping, navigation ref                                                          |
+| Maps              | Google Maps view, markers, route polyline, tap-to-select location, coordinate display                                                                                |
+| Services          | Typed API client with errors and auth callback, MMKV preferences adapter, memory storage for tests, persisted state hook, network status hook                        |
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+Example API usage:
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+```ts
+import { createApiClient } from './src';
 
-## Congratulations! :tada:
+const api = createApiClient({ baseUrl: 'https://api.example.com' });
+const profile = await api.request<{ name: string }>('/profile');
+```
 
-You've successfully run and modified your React Native App. :partying_face:
+Preferences use `src/services/storage/mmkv.ts`. Keep access tokens and secrets in Keychain or Android Keystore through a secure storage module rather than in MMKV preferences. MMKV is for small key-value data; add a database for large structured offline datasets.
 
-### Now what?
+## Native modules
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+This starter installs React Navigation native stack and native tabs, React Native Screens, Gesture Handler, Reanimated and Worklets, Gorhom Bottom Sheet, React Native Maps, MMKV with Nitro Modules, NetInfo, the community date/time picker, and React Native SVG. `App.tsx` already includes `GestureHandlerRootView` and `BottomSheetModalProvider`. Rebuild Android or run `pod install` and rebuild iOS after changing native packages.
 
-# Troubleshooting
+## Google Maps setup
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+The Maps tab shows a setup state until you add platform keys. Google Maps requires separate Android and iOS SDK keys, with the corresponding Maps SDKs enabled in Google Cloud and billing set up. Restrict each key to this app's package name or bundle ID and signing certificate as appropriate.
 
-# Learn More
+1. **Android:** Set `GOOGLE_MAPS_ANDROID_API_KEY` in your local `~/.gradle/gradle.properties` or environment. `android/app/build.gradle` passes it to the manifest without committing the key.
+2. **iOS:** Set the `GOOGLE_MAPS_IOS_API_KEY` build setting for Debug and Release in Xcode. `Info.plist` passes it to `AppDelegate.swift`. Run `cd ios && pod install` after installing dependencies.
+3. Set `mapsReady` to `true` in `src/app/config/maps.ts`, then rebuild the app. The map wrapper always uses the Google provider on both platforms.
 
-To learn more about React Native, take a look at the following resources:
+The `AppLocationPicker` selects coordinates when the user taps the map. It does not request device location permission; add that only when a future feature needs GPS. `AppMapRoute` accepts polyline coordinates for GIS overlays.
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+The broad catalogue in `setup.md` is staged. Sync queues, media/file pickers, push notifications, biometrics, charting, and other provider-specific features remain separate modules to add when a project needs them. The `RootNavigator`'s auth flag is currently a demo constant in `App.tsx`; connect it to a real session provider in an app.

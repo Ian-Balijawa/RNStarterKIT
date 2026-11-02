@@ -35,7 +35,9 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>Allow location access to show your position on the map when you choose to use it.</string>
+	<key>GoogleMapsAPIKey</key>
+	<string>$(GOOGLE_MAPS_IOS_API_KEY)</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

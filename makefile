@@ -1,430 +1,168 @@
 ANDROID_DIR ?= android
-IOS_DIR     ?= ios
+IOS_DIR ?= ios
+APP_ID ?= com.starterapp
+IOS_SCHEME ?= starterapp
+IOS_WORKSPACE ?= starterapp.xcworkspace
+IOS_UDID ?=
+IOS_DESTINATION ?= generic/platform=iOS Simulator
 
-# Android application/package ID.
-# Override this per project:
-#
-#   make android APP_ID=com.example.myapp
-#
-# Android application/package ID.
-APP_ID ?= com.pidmis.yoya
+NPM ?= npm
+GRADLE ?= ./gradlew
+ADB ?= adb
 
-# Output APK name.
-# Override with:
-#
-#   make apk name=dev-ciems-v1.0.5.apk
-#
+# Optional filename for a copy of the release APK: make apk name=starterapp.apk
 name ?=
 
-# React Native commands
-YARN ?= yarn
-NPM  ?= npm
-
-# Build tools
-GRADLE ?= ./gradlew
-
-# Project name
-PROJECT_NAME ?= $(shell basename "$(PWD)")
-
-ANDROID_GRADLE := cd $(ANDROID_DIR) && $(GRADLE)
-
-# Returns the UDID of:
-#   1. Latest booted iOS simulator
-#   2. Otherwise latest available iOS simulator
-#
-define get_ios_simulator
-	$(shell \
-		booted=$$(xcrun simctl list devices booted --json 2>/dev/null | \
-			python3 -c " \
-import sys, json; \
-data=json.load(sys.stdin); \
-devices=[(runtime,d) for runtime,devs in data.get('devices',{}).items() \
-	for d in devs if 'iOS' in runtime]; \
-devices.sort(key=lambda x:x[0],reverse=True); \
-print(devices[0][1]['udid']) if devices else print('') \
-			" 2>/dev/null); \
-		if [ -n "$$booted" ]; then \
-			echo "$$booted"; \
-		else \
-			xcrun simctl list devices available --json 2>/dev/null | \
-			python3 -c " \
-import sys, json; \
-data=json.load(sys.stdin); \
-devices=[(runtime,d) for runtime,devs in data.get('devices',{}).items() \
-	for d in devs if 'iOS' in runtime and d.get('isAvailable',False)]; \
-devices.sort(key=lambda x:x[0],reverse=True); \
-print(devices[0][1]['udid']) if devices else print('') \
-			" 2>/dev/null; \
-		fi \
-	)
-endef
-
-# Returns:
-#   Device Name (iOS Version)
-#
-define get_ios_simulator_name
-	$(shell \
-		xcrun simctl list devices available --json 2>/dev/null | \
-		python3 -c " \
-import sys,json; \
-data=json.load(sys.stdin); \
-devices=[(runtime,d) for runtime,devs in data.get('devices',{}).items() \
-	for d in devs if 'iOS' in runtime and d.get('isAvailable',False)]; \
-devices.sort(key=lambda x:x[0],reverse=True); \
-d=devices[0] if devices else None; \
-runtime_label=d[0].replace('com.apple.CoreSimulator.SimRuntime.','').replace('-',' ') if d else ''; \
-print(f'{d[1][\"name\"]} ({runtime_label})') if d else print('unknown') \
-			" 2>/dev/null \
-	)
-endef
-
-.PHONY: check-android
-check-android:
-	@if [ ! -d "$(ANDROID_DIR)" ]; then \
-		echo "❌ Android directory not found: $(ANDROID_DIR)"; \
-		exit 1; \
-	fi
-
-.PHONY: check-ios
-check-ios:
-	@if [ ! -d "$(IOS_DIR)" ]; then \
-		echo "❌ iOS directory not found: $(IOS_DIR)"; \
-		exit 1; \
-	fi
-
-.PHONY: check-app-id
-check-app-id:
-	@if [ -z "$(APP_ID)" ]; then \
-		echo "❌ APP_ID is not configured."; \
-		echo "Example: make android APP_ID=com.example.myapp"; \
-		exit 1; \
-	fi
+ANDROID_GRADLE = cd "$(ANDROID_DIR)" && $(GRADLE)
+DEBUG_APK = $(ANDROID_DIR)/app/build/outputs/apk/debug/app-debug.apk
+RELEASE_APK = $(ANDROID_DIR)/app/build/outputs/apk/release/app-release.apk
+RELEASE_AAB = $(ANDROID_DIR)/app/build/outputs/bundle/release/app-release.aab
+PODS_MANIFEST = $(IOS_DIR)/Pods/Manifest.lock
 
 .DEFAULT_GOAL := help
+.PHONY: help check-android check-ios start android ios pods apk bundle ios-build \
+        install install-debug clean-android clean-ios clean reset test lint \
+        typecheck check info devices
 
-.PHONY: help
 help:
+	@echo "starterapp commands"
 	@echo ""
-	@echo "============================================================"
-	@echo "  $(PROJECT_NAME) - React Native Makefile"
-	@echo "============================================================"
+	@echo "  make start           Start Metro"
+	@echo "  make android         Build and run Android debug app"
+	@echo "  make ios             Build and run iOS debug app"
+	@echo "  make pods            Install or refresh iOS pods"
+	@echo "  make apk             Build release APK"
+	@echo "  make bundle          Build release AAB"
+	@echo "  make ios-build       Build iOS Release for simulator"
+	@echo "  make install         Build and install release APK"
+	@echo "  make install-debug   Build and install debug APK"
+	@echo "  make test            Run Jest tests"
+	@echo "  make lint            Run ESLint"
+	@echo "  make typecheck       Run TypeScript checks"
+	@echo "  make check           Run all three checks"
+	@echo "  make clean           Clean Android and iOS builds"
+	@echo "  make reset           Reinstall npm packages and pods"
+	@echo "  make info            Show project settings"
+	@echo "  make devices         List Android devices and iOS simulators"
 	@echo ""
-	@echo "Configuration:"
-	@echo "  APP_ID=$(APP_ID)"
-	@echo "  ANDROID_DIR=$(ANDROID_DIR)"
-	@echo "  IOS_DIR=$(IOS_DIR)"
-	@echo ""
-	@echo "Development:"
-	@echo "  make start              Start Metro bundler"
-	@echo "  make android            Run Android debug build"
-	@echo "  make ios                Run iOS debug build"
-	@echo "  make pods               Install iOS CocoaPods"
-	@echo ""
-	@echo "Build:"
-	@echo "  make apk                Build release APK"
-	@echo "  make bundle             Build release AAB"
-	@echo "  make ios-build          Build iOS Release"
-	@echo ""
-	@echo "Installation:"
-	@echo "  make install             Build and install APK"
-	@echo "  make install-debug       Build and install debug APK"
-	@echo ""
-	@echo "Maintenance:"
-	@echo "  make clean-android       Clean Android build"
-	@echo "  make clean-ios           Clean iOS build"
-	@echo "  make clean               Clean all builds"
-	@echo "  make reset               Reset dependencies and builds"
-	@echo "  make test                Run tests"
-	@echo ""
-	@echo "Examples:"
-	@echo "  make android APP_ID=com.example.myapp"
-	@echo "  make install APP_ID=com.example.myapp"
-	@echo "  make ios IOS_SCHEME=MyApp"
-	@echo ""
+	@echo "Overrides: APP_ID=$(APP_ID), IOS_SCHEME=$(IOS_SCHEME), IOS_UDID=<simulator UDID>"
+	@echo "Examples: make apk name=starterapp-v1.apk"
+	@echo "          make ios IOS_UDID=<simulator UDID>"
 
-.PHONY: start
+check-android:
+	@test -f "$(ANDROID_DIR)/gradlew" || { echo "Android Gradle wrapper not found in $(ANDROID_DIR)"; exit 1; }
+
+check-ios:
+	@test -f "$(IOS_DIR)/Podfile" || { echo "iOS Podfile not found in $(IOS_DIR)"; exit 1; }
+
 start:
-	$(YARN) start
+	$(NPM) start
 
-# Android Development
-.PHONY: android
-android: check-android check-app-id
-	@echo "→ Starting Android development build"
-	@echo "→ Application ID: $(APP_ID)"
+# APP_ID tells the CLI which installed package to launch. To rename the
+# package itself, change applicationId in android/app/build.gradle too.
+android: check-android
+	$(NPM) run android -- --appId "$(APP_ID)"
 
-	@adb kill-server >/dev/null 2>&1 || true
-	@adb start-server >/dev/null
+$(PODS_MANIFEST): $(IOS_DIR)/Podfile package-lock.json
+	cd "$(IOS_DIR)" && pod install
 
-	@for device in $$(adb devices | awk 'NR>1 && $$2=="device" {print $$1}'); do \
-		if adb -s $$device shell pm path "$(APP_ID)" >/dev/null 2>&1; then \
-			echo "→ Uninstalling $(APP_ID) from $$device"; \
-			adb -s $$device uninstall "$(APP_ID)" >/dev/null || true; \
-		else \
-			echo "→ $(APP_ID) not installed on $$device"; \
-		fi; \
-	done
-
-	$(YARN) android
-
-# iOS Development
-.PHONY: ios
-ios: check-ios
-	$(eval SIM_UDID := $(call get_ios_simulator))
-	$(eval SIM_NAME := $(call get_ios_simulator_name))
-
-	@if [ -z "$(SIM_UDID)" ]; then \
-		echo "❌ No iOS simulator found."; \
-		echo "Open Xcode > Window > Devices and Simulators."; \
-		exit 1; \
-	fi
-
-	@echo "→ Project: $(PROJECT_NAME)"
-	@echo "→ Target simulator: $(SIM_NAME)"
-	@echo "→ UDID: $(SIM_UDID)"
-
-	cd $(IOS_DIR) && pod install
-
-	$(YARN) ios --udid $(SIM_UDID)
-
-# CocoaPods
-.PHONY: pods
 pods: check-ios
-	@echo "→ Installing CocoaPods dependencies..."
-	cd $(IOS_DIR) && pod install
+	cd "$(IOS_DIR)" && pod install
 
-# Release APK
-.PHONY: apk
+# React Native chooses an available simulator unless IOS_UDID is supplied.
+ios: check-ios $(PODS_MANIFEST)
+	$(NPM) run ios -- --scheme "$(IOS_SCHEME)" $(if $(IOS_UDID),--udid "$(IOS_UDID)")
+
 apk: check-android
-	@echo "→ Building Android Release APK..."
-
-	$(ANDROID_GRADLE) assembleRelease
-
-	@APK_PATH=$$(find $(ANDROID_DIR)/app/build/outputs/apk/release \
-		-type f -name "*.apk" | head -n 1); \
-	\
-	if [ -z "$$APK_PATH" ]; then \
-		echo "❌ APK not found. Build may have failed."; \
-		exit 1; \
-	fi; \
-	\
-	if [ -n "$(name)" ]; then \
-		OUTPUT_PATH="$(ANDROID_DIR)/app/build/outputs/apk/release/$(name)"; \
-		\
-		echo "→ Renaming APK:"; \
-		echo "   From: $$APK_PATH"; \
-		echo "   To:   $$OUTPUT_PATH"; \
-		\
-		mv "$$APK_PATH" "$$OUTPUT_PATH"; \
-		\
-		echo "✅ APK generated:"; \
-		echo "   $$OUTPUT_PATH"; \
+	$(ANDROID_GRADLE) :app:assembleRelease
+	@test -f "$(RELEASE_APK)" || { echo "Release APK not found: $(RELEASE_APK)"; exit 1; }
+	@if [ -n "$(name)" ]; then \
+		cp "$(RELEASE_APK)" "$(ANDROID_DIR)/app/build/outputs/apk/release/$(name)"; \
+		echo "APK: $(ANDROID_DIR)/app/build/outputs/apk/release/$(name)"; \
 	else \
-		echo "✅ APK generated:"; \
-		echo "   $$APK_PATH"; \
+		echo "APK: $(RELEASE_APK)"; \
 	fi
 
-
-# Release AAB
-.PHONY: bundle
 bundle: check-android
-	@echo "→ Building Android Release AAB..."
+	$(ANDROID_GRADLE) :app:bundleRelease
+	@test -f "$(RELEASE_AAB)" || { echo "Release AAB not found: $(RELEASE_AAB)"; exit 1; }
+	@echo "AAB: $(RELEASE_AAB)"
 
-	$(ANDROID_GRADLE) bundleRelease
-
-	@AAB_PATH=$$(find $(ANDROID_DIR)/app/build/outputs/bundle \
-		-type f -name "*.aab" | head -n 1); \
-	\
-	if [ -z "$$AAB_PATH" ]; then \
-		echo "❌ AAB not found. Build may have failed."; \
-		exit 1; \
-	fi; \
-	\
-	echo "✅ AAB generated:"; \
-	echo "   $$AAB_PATH"
-
-
-# iOS BUILDS
-.PHONY: ios-build
-ios-build: check-ios
-	$(eval SIM_UDID := $(call get_ios_simulator))
-	$(eval SIM_NAME := $(call get_ios_simulator_name))
-
-	@if [ -z "$(SIM_UDID)" ]; then \
-		echo "❌ No iOS simulator found."; \
-		exit 1; \
-	fi
-
-	@echo "→ Building $(PROJECT_NAME) for:"
-	@echo "   Simulator: $(SIM_NAME)"
-	@echo "   UDID: $(SIM_UDID)"
-
-	cd $(IOS_DIR) && pod install
-
-	cd $(IOS_DIR) && \
-	xcodebuild \
-		-workspace $$(find . -maxdepth 1 -name "*.xcworkspace" -print -quit) \
-		-scheme "$$(find . -maxdepth 1 -name "*.xcodeproj" \
-			-print -quit | xargs -n1 basename | sed 's/.xcodeproj//')" \
+# A generic simulator destination works without a booted simulator.
+ios-build: check-ios $(PODS_MANIFEST)
+	cd "$(IOS_DIR)" && xcodebuild \
+		-workspace "$(IOS_WORKSPACE)" \
+		-scheme "$(IOS_SCHEME)" \
 		-configuration Release \
-		-destination "id=$(SIM_UDID)" \
-		build
+		-destination "$(IOS_DESTINATION)" \
+		CODE_SIGNING_ALLOWED=NO build
 
+# adb install -r updates the app without deleting its data.
+install: apk
+	@set -eu; \
+		$(ADB) start-server >/dev/null; \
+		devices=$$($(ADB) devices | awk 'NR > 1 && $$2 == "device" { print $$1 }'); \
+		if [ -z "$$devices" ]; then echo "No Android devices or emulators connected"; exit 1; fi; \
+		for device in $$devices; do \
+			echo "Installing $(RELEASE_APK) on $$device"; \
+			$(ADB) -s "$$device" install -r "$(RELEASE_APK)"; \
+			path=$$($(ADB) -s "$$device" shell pm path "$(APP_ID)"); \
+			if [ -z "$$path" ]; then echo "Package $(APP_ID) not found on $$device"; exit 1; fi; \
+		done
 
-# INSTALLATION
-# Install Release APK
+install-debug: check-android
+	$(ANDROID_GRADLE) :app:assembleDebug
+	@test -f "$(DEBUG_APK)" || { echo "Debug APK not found: $(DEBUG_APK)"; exit 1; }
+	@set -eu; \
+		$(ADB) start-server >/dev/null; \
+		devices=$$($(ADB) devices | awk 'NR > 1 && $$2 == "device" { print $$1 }'); \
+		if [ -z "$$devices" ]; then echo "No Android devices or emulators connected"; exit 1; fi; \
+		for device in $$devices; do \
+			echo "Installing $(DEBUG_APK) on $$device"; \
+			$(ADB) -s "$$device" install -r "$(DEBUG_APK)"; \
+			path=$$($(ADB) -s "$$device" shell pm path "$(APP_ID)"); \
+			if [ -z "$$path" ]; then echo "Package $(APP_ID) not found on $$device"; exit 1; fi; \
+		done
 
-.PHONY: install
-install: check-android check-app-id
-	@echo "→ Building release APK..."
-
-	$(ANDROID_GRADLE) assembleRelease
-
-	@APK_PATH=$$(find $(ANDROID_DIR)/app/build/outputs/apk/release \
-		-type f -name "*.apk" | head -n 1); \
-	\
-	if [ -z "$$APK_PATH" ]; then \
-		echo "❌ APK not found. Build may have failed."; \
-		exit 1; \
-	fi; \
-	\
-	echo "→ Using APK: $$APK_PATH"; \
-	\
-	adb kill-server >/dev/null 2>&1 || true; \
-	adb start-server >/dev/null; \
-	\
-	DEVICES=$$(adb devices | awk 'NR>1 && $$2=="device" {print $$1}'); \
-	\
-	if [ -z "$$DEVICES" ]; then \
-		echo "❌ No Android devices or emulators connected."; \
-		exit 1; \
-	fi; \
-	\
-	for device in $$DEVICES; do \
-		echo ""; \
-		echo "→ Processing device: $$device"; \
-		\
-		if adb -s $$device shell pm path "$(APP_ID)" >/dev/null 2>&1; then \
-			echo "  - Uninstalling $(APP_ID)"; \
-			adb -s $$device uninstall "$(APP_ID)" >/dev/null || true; \
-		else \
-			echo "  - $(APP_ID) not installed"; \
-		fi; \
-		\
-		echo "  - Installing APK"; \
-		adb -s $$device install "$$APK_PATH"; \
-		\
-		echo "  ✓ Installed on $$device"; \
-	done
-
-
-# Install Debug APK
-.PHONY: install-debug
-install-debug: check-android check-app-id
-	@echo "→ Building debug APK..."
-
-	$(ANDROID_GRADLE) assembleDebug
-
-	@APK_PATH=$$(find $(ANDROID_DIR)/app/build/outputs/apk/debug \
-		-type f -name "*.apk" | head -n 1); \
-	\
-	if [ -z "$$APK_PATH" ]; then \
-		echo "❌ Debug APK not found."; \
-		exit 1; \
-	fi; \
-	\
-	echo "→ Installing: $$APK_PATH"; \
-	\
-	adb start-server >/dev/null; \
-	\
-	for device in $$(adb devices | awk 'NR>1 && $$2=="device" {print $$1}'); do \
-		echo "→ Installing on $$device"; \
-		adb -s $$device install -r "$$APK_PATH"; \
-	done
-
-
-# MAINTENANCE
-# Clean Android
-.PHONY: clean-android
 clean-android: check-android
-	@echo "→ Cleaning Android..."
+	$(ANDROID_GRADLE) clean
+	rm -rf "$(ANDROID_DIR)/.cxx" "$(ANDROID_DIR)/app/.cxx"
 
-	cd $(ANDROID_DIR) && ./gradlew clean
-
-	rm -rf $(ANDROID_DIR)/.cxx
-	rm -rf $(ANDROID_DIR)/app/.cxx
-	rm -rf $(ANDROID_DIR)/app/build
-	rm -rf $(ANDROID_DIR)/build
-
-	@echo "✅ Android cleaned"
-
-
-# Clean iOS
-.PHONY: clean-ios
 clean-ios: check-ios
-	@echo "→ Cleaning iOS..."
+	cd "$(IOS_DIR)" && xcodebuild -workspace "$(IOS_WORKSPACE)" -scheme "$(IOS_SCHEME)" clean
+	rm -rf "$(IOS_DIR)/build"
 
-	rm -rf $(IOS_DIR)/build
-
-	cd $(IOS_DIR) && xcodebuild clean >/dev/null 2>&1 || true
-
-	@echo "✅ iOS cleaned"
-
-
-# Clean Everything
-.PHONY: clean
 clean: clean-android clean-ios
-	@echo "✅ All builds cleaned"
 
-
-# Full Reset
-.PHONY: reset
+# Keep package-lock.json and Podfile.lock so reset remains reproducible.
 reset:
-	@echo "⚠️  Performing full React Native reset..."
+	rm -rf node_modules "$(ANDROID_DIR)/.cxx" "$(ANDROID_DIR)/app/.cxx" \
+		"$(ANDROID_DIR)/app/build" "$(ANDROID_DIR)/build" "$(IOS_DIR)/Pods" "$(IOS_DIR)/build"
+	$(NPM) ci
+	cd "$(IOS_DIR)" && pod install
 
-	rm -rf node_modules
-
-	rm -rf $(ANDROID_DIR)/.cxx
-	rm -rf $(ANDROID_DIR)/app/.cxx
-	rm -rf $(ANDROID_DIR)/app/build
-	rm -rf $(ANDROID_DIR)/build
-
-	rm -rf $(IOS_DIR)/Pods
-	rm -rf $(IOS_DIR)/Podfile.lock
-	rm -rf $(IOS_DIR)/build
-
-	$(YARN) install
-
-	cd $(IOS_DIR) && pod install
-
-	cd $(ANDROID_DIR) && ./gradlew clean
-
-	@echo "✅ Reset complete"
-
-.PHONY: test
 test:
-	@echo "⚠️  Performing full test"
+	$(NPM) test -- --runInBand --watchman=false
 
-	npm run test
+lint:
+	$(NPM) run lint
 
-	@echo "✅ Test complete"
+typecheck:
+	npx tsc --noEmit
 
-# INFORMATION
-.PHONY: info
+check: typecheck lint test
+
 info:
-	@echo ""
-	@echo "Project information"
-	@echo "-------------------"
-	@echo "Project:       $(PROJECT_NAME)"
-	@echo "Android dir:   $(ANDROID_DIR)"
-	@echo "iOS dir:       $(IOS_DIR)"
-	@echo "Android App ID: $(APP_ID)"
-	@echo ""
+	@echo "Project: starterapp"
+	@echo "Android application ID: $(APP_ID)"
+	@echo "Android directory: $(ANDROID_DIR)"
+	@echo "iOS directory: $(IOS_DIR)"
+	@echo "iOS scheme: $(IOS_SCHEME)"
+	@echo "iOS workspace: $(IOS_WORKSPACE)"
+	@echo "iOS build destination: $(IOS_DESTINATION)"
 
-.PHONY: devices
 devices:
 	@echo "Android devices:"
-	@adb devices
-
-	@echo ""
+	@$(ADB) devices
 	@echo "iOS simulators:"
-	@xcrun simctl list devices available | grep -E "iPhone|iPad" || true
+	@xcrun simctl list devices available
