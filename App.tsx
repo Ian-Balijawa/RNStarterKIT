@@ -166,9 +166,9 @@ function StarterHome() {
         />
       </AppScreen>
       <AppFloatingActionButton
-        icon="plus"
-        label="New item"
-        bottomOffset={72}
+        icon="check"
+        // label="New item"
+        bottomOffset={100}
         onPress={openQuickActions}
       />
     </View>
