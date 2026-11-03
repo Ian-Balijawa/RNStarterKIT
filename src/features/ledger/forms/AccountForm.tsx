@@ -71,6 +71,7 @@ export function AccountForm({
         value={opening}
         onChangeText={setOpening}
         keyboardType="numeric"
+        currency
       />
       <AppText muted variant="caption">
         Opening balance is the amount this account held before you started

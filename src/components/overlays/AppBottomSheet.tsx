@@ -11,6 +11,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../theme/theme';
 import { AppText } from '../ui/AppText';
 import { BottomSheetInputContext } from './BottomSheetInputContext';
+import { TrashIcon } from '../ui/TrashIcon';
+
+type HeaderIcon = 'trash';
+
+type HeaderAction = {
+  label: string;
+  onPress: () => void;
+  destructive?: boolean;
+  icon?: HeaderIcon;
+};
 
 type SheetProps = {
   visible: boolean;
@@ -20,7 +30,7 @@ type SheetProps = {
   snapPoints?: Array<string | number>;
   scrollable?: boolean;
   footer?: React.ReactNode;
-  headerAction?: { label: string; onPress: () => void; destructive?: boolean };
+  headerAction?: HeaderAction;
 };
 const DEFAULT_SNAP_POINTS = ['60%', '100%'];
 
@@ -62,8 +72,13 @@ export function AppBottomSheet({
     ),
     [],
   );
+
   const header = title ? (
-    <View style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.header,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}>
       <AppText variant="heading" style={styles.headerTitle} numberOfLines={1}>
         {title}
       </AppText>
@@ -73,22 +88,28 @@ export function AppBottomSheet({
           accessibilityLabel={headerAction.label}
           onPress={headerAction.onPress}
           hitSlop={8}
-          style={styles.closeButton}>
-          <AppText variant="label" style={{ color: headerAction.destructive ? colors.danger : colors.primary }}>
-            {headerAction.label}
-          </AppText>
+          style={styles.iconButton}>
+          {headerAction.icon === 'trash' ? (
+            <TrashIcon
+              color={headerAction.destructive ? colors.danger : colors.primary}
+              size={24}
+            />
+          ) : (
+            <AppText
+              variant="label"
+              style={{
+                color: headerAction.destructive
+                  ? colors.danger
+                  : colors.primary,
+              }}>
+              {headerAction.label}
+            </AppText>
+          )}
         </Pressable>
       ) : null}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Close sheet"
-        onPress={onDismiss}
-        hitSlop={8}
-        style={styles.closeButton}>
-        <AppText variant="label" style={{ color: colors.primary }}>Close</AppText>
-      </Pressable>
     </View>
   ) : null;
+
   const content = (
     <BottomSheetInputContext.Provider value>
       <View style={styles.content}>{children}</View>
@@ -140,7 +161,10 @@ export function AppBottomSheet({
           {content}
         </BottomSheetScrollView>
       ) : (
-        <BottomSheetView>{header}{content}</BottomSheetView>
+        <BottomSheetView>
+          {header}
+          {content}
+        </BottomSheetView>
       )}
     </BottomSheetModal>
   );
@@ -156,14 +180,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  iconButton: {
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: { flex: 1, minWidth: 0 },
-  closeButton: { minHeight: 44, justifyContent: 'center' },
   scrollContent: { paddingBottom: 24 },
   scrollWithFooter: { paddingBottom: 152 },
   footer: {

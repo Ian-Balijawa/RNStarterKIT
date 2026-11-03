@@ -3,6 +3,7 @@ import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import {
   Pressable,
   StyleSheet,
+  Text,
   TextInput,
   TextInputProps,
   View,
@@ -12,6 +13,24 @@ import { AppFormField } from './AppFormField';
 import { AppIcon, IconName } from '../ui/AppIcon';
 import { BottomSheetInputContext } from '../overlays/BottomSheetInputContext';
 
+const NUMERIC_KEYBOARDS = ['numeric', 'number-pad', 'decimal-pad'];
+
+function sanitizeNumber(text: string, decimals: number) {
+  const cleaned = text.replace(/[^0-9.]/g, '');
+  const [rawInt, ...fracParts] = cleaned.split('.');
+  const intPart = rawInt.replace(/^0+(?=\d)/, '');
+  if (decimals <= 0 || fracParts.length === 0) {
+    return intPart;
+  }
+  return `${intPart}.${fracParts.join('').slice(0, decimals)}`;
+}
+
+function addCommas(raw: string) {
+  const [intPart, frac] = raw.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return frac !== undefined ? `${grouped}.${frac}` : grouped;
+}
+
 export function AppTextInput({
   label,
   hint,
@@ -20,6 +39,10 @@ export function AppTextInput({
   prefixIcon,
   clearable,
   secureTextEntry,
+  currency,
+  thousandsSeparator,
+  decimals,
+  keyboardType,
   value,
   onChangeText,
   style,
@@ -31,11 +54,35 @@ export function AppTextInput({
   required?: boolean;
   prefixIcon?: IconName;
   clearable?: boolean;
+  /** true shows "UGX". Pass a string such as "USD" for another currency. */
+  currency?: boolean | string;
+  /** Defaults to true when the keyboard is numeric or currency is set. */
+  thousandsSeparator?: boolean;
+  /** Max decimal places. Defaults to 0 for UGX and 2 for other currencies. */
+  decimals?: number;
 }) {
   const { colors, radius } = useAppTheme();
   const [reveal, setReveal] = useState(false);
   const insideSheet = useContext(BottomSheetInputContext);
   const Input = insideSheet ? BottomSheetTextInput : TextInput;
+
+  const currencyCode =
+    currency === true ? 'UGX' : typeof currency === 'string' ? currency : null;
+  const isNumeric = !!keyboardType && NUMERIC_KEYBOARDS.includes(keyboardType);
+  const useCommas = thousandsSeparator ?? (isNumeric || !!currencyCode);
+  const formatNumber = useCommas || !!currencyCode;
+  const maxDecimals =
+    decimals ?? (!currencyCode || currencyCode === 'UGX' ? 0 : 2);
+
+  const displayValue =
+    formatNumber && value !== undefined
+      ? addCommas(sanitizeNumber(value, maxDecimals))
+      : value;
+
+  const handleChange = (text: string) => {
+    onChangeText?.(formatNumber ? sanitizeNumber(text, maxDecimals) : text);
+  };
+
   return (
     <AppFormField label={label} hint={hint} error={error} required={required}>
       <View
@@ -48,10 +95,16 @@ export function AppTextInput({
           },
         ]}>
         {prefixIcon ? <AppIcon name={prefixIcon} color={colors.muted} /> : null}
+        {currencyCode ? (
+          <Text style={[styles.currency, { color: colors.muted }]}>
+            {currencyCode}
+          </Text>
+        ) : null}
         <Input
           {...props}
-          value={value}
-          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          value={displayValue}
+          onChangeText={handleChange}
           secureTextEntry={secureTextEntry && !reveal}
           placeholderTextColor={colors.muted}
           accessibilityLabel={props.accessibilityLabel || label}
@@ -93,4 +146,5 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   input: { flex: 1, paddingVertical: 10, fontSize: 16 },
+  currency: { fontSize: 14, fontWeight: '600' },
 });

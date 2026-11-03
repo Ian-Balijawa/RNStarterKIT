@@ -136,6 +136,7 @@ export function TransactionForm({
         value={amount}
         onChangeText={setAmount}
         keyboardType="numeric"
+        currency
         placeholder="e.g. 25,000"
         required
       />

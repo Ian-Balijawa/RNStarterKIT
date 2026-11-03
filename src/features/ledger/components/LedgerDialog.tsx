@@ -96,13 +96,14 @@ export function LedgerDialog({
       return {
         label: 'Delete',
         destructive: true,
-        onPress: () => confirmDelete('Delete budget?', () => {
-          setLedger(current => ({
-            ...current,
-            budgets: current.budgets.filter(item => item.id !== id),
-          }));
-          onClose();
-        }),
+        onPress: () =>
+          confirmDelete('Delete budget?', () => {
+            setLedger(current => ({
+              ...current,
+              budgets: current.budgets.filter(item => item.id !== id),
+            }));
+            onClose();
+          }),
       };
     }
     if (dialog?.kind === 'transactionDetail') {
@@ -110,13 +111,14 @@ export function LedgerDialog({
       return {
         label: 'Delete',
         destructive: true,
-        onPress: () => confirmDelete('Delete transaction?', () => {
-          setLedger(current => ({
-            ...current,
-            transactions: current.transactions.filter(item => item.id !== id),
-          }));
-          onClose();
-        }),
+        onPress: () =>
+          confirmDelete('Delete transaction?', () => {
+            setLedger(current => ({
+              ...current,
+              transactions: current.transactions.filter(item => item.id !== id),
+            }));
+            onClose();
+          }),
       };
     }
     if (dialog?.kind === 'scheduleDetail') {
@@ -124,13 +126,14 @@ export function LedgerDialog({
       return {
         label: 'Delete',
         destructive: true,
-        onPress: () => confirmDelete('Delete schedule?', () => {
-          setLedger(current => ({
-            ...current,
-            schedules: current.schedules.filter(item => item.id !== id),
-          }));
-          onClose();
-        }),
+        onPress: () =>
+          confirmDelete('Delete schedule?', () => {
+            setLedger(current => ({
+              ...current,
+              schedules: current.schedules.filter(item => item.id !== id),
+            }));
+            onClose();
+          }),
       };
     }
     return undefined;
@@ -236,10 +239,7 @@ export function LedgerDialog({
         />
       ) : null}
       {dialog?.kind === 'transactionDetail' ? (
-        <TransactionDetail
-          item={dialog.item}
-          ledger={ledger}
-        />
+        <TransactionDetail item={dialog.item} ledger={ledger} />
       ) : null}
       {dialog?.kind === 'scheduleDetail' ? (
         <ScheduleDetail
