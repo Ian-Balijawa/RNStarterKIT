@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import {
   Pressable,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
 import { useAppTheme } from '../../theme/theme';
 import { AppFormField } from './AppFormField';
 import { AppIcon, IconName } from '../ui/AppIcon';
+import { BottomSheetInputContext } from '../overlays/BottomSheetInputContext';
 
 export function AppTextInput({
   label,
@@ -32,6 +34,8 @@ export function AppTextInput({
 }) {
   const { colors, radius } = useAppTheme();
   const [reveal, setReveal] = useState(false);
+  const insideSheet = useContext(BottomSheetInputContext);
+  const Input = insideSheet ? BottomSheetTextInput : TextInput;
   return (
     <AppFormField label={label} hint={hint} error={error} required={required}>
       <View
@@ -44,7 +48,7 @@ export function AppTextInput({
           },
         ]}>
         {prefixIcon ? <AppIcon name={prefixIcon} color={colors.muted} /> : null}
-        <TextInput
+        <Input
           {...props}
           value={value}
           onChangeText={onChangeText}

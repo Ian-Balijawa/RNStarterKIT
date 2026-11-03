@@ -75,6 +75,11 @@ export function AppDatePicker({
           hour: 'numeric',
           minute: '2-digit',
         })
+      : mode === 'datetime'
+      ? `${value.toLocaleDateString()} · ${value.toLocaleTimeString(undefined, {
+          hour: 'numeric',
+          minute: '2-digit',
+        })}`
       : value.toLocaleDateString()
     : `Choose ${mode === 'time' ? 'a time' : 'a date'}`;
   return (

@@ -73,7 +73,12 @@ export function AppButton({
         <View style={styles.content}>
           {icon ? <AppIcon name={icon} color={ink} /> : null}
           {title ? (
-            <AppText variant="label" style={{ color: ink }}>
+            <AppText
+              variant="label"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+              style={[styles.title, { color: ink }]}>
               {title}
             </AppText>
           ) : null}
@@ -92,4 +97,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  title: { flexShrink: 1, textAlign: 'center' },
 });

@@ -4,9 +4,32 @@
 
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+import { AppButton } from '../src/components/ui/AppButton';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppThemeProvider } from '../src/theme/theme';
+import { AppBottomSheetProvider } from '../src/components/overlays/AppBottomSheetProvider';
+import { LedgerApp } from '../src/features/ledger/LedgerApp';
+
+jest.mock('react-native-simple-biometrics', () => ({
+  __esModule: true,
+  default: {
+    canAuthenticate: jest.fn().mockResolvedValue(false),
+    requestBioAuth: jest.fn(),
+  },
+}));
 
 jest.mock('react-native-gesture-handler', () => ({
   GestureHandlerRootView: require('react-native').View,
+}));
+jest.mock('react-native-mmkv', () => ({
+  createMMKV: () => {
+    const values = new Map<string, string>();
+    return {
+      getString: (key: string) => values.get(key),
+      set: (key: string, value: string) => values.set(key, value),
+      remove: (key: string) => values.delete(key),
+    };
+  },
 }));
 jest.mock('@gorhom/bottom-sheet', () => {
   const MockView = require('react-native').View;
@@ -52,4 +75,36 @@ test('renders correctly', async () => {
   await ReactTestRenderer.act(() => {
     ReactTestRenderer.create(<App />);
   });
+});
+
+test('creates a profile from the overview avatar and shows its initials', async () => {
+  let renderer!: ReactTestRenderer.ReactTestRenderer;
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(
+      <SafeAreaProvider initialMetrics={{
+        frame: { x: 0, y: 0, width: 375, height: 812 },
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      }}>
+        <AppThemeProvider>
+          <AppBottomSheetProvider><LedgerApp /></AppBottomSheetProvider>
+        </AppThemeProvider>
+      </SafeAreaProvider>,
+    );
+  });
+  await ReactTestRenderer.act(() => {
+    renderer.root.findByProps({ accessibilityLabel: 'Open profile' }).props.onPress();
+  });
+  const input = (label: string) => renderer.root.findByProps({ accessibilityLabel: label });
+  await ReactTestRenderer.act(() => {
+    input('Full name').props.onChangeText('Amina N.');
+    input('Phone number').props.onChangeText('+256 700 000 000');
+  });
+  await ReactTestRenderer.act(() => {
+    renderer.root.findAllByType(AppButton).find(item => item.props.title === 'Create profile')!.props.onPress();
+  });
+  await ReactTestRenderer.act(() => {
+    renderer.root.findByProps({ accessibilityLabel: 'Back to overview' }).props.onPress();
+  });
+  expect(renderer.root.findAllByProps({ accessibilityLabel: 'Open profile' }).length).toBeGreaterThan(0);
+  expect(JSON.stringify(renderer.toJSON())).toContain('AN');
 });
