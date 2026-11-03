@@ -5,8 +5,26 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 
+jest.mock('react-native-simple-biometrics', () => ({
+  __esModule: true,
+  default: {
+    canAuthenticate: jest.fn().mockResolvedValue(false),
+    requestBioAuth: jest.fn(),
+  },
+}));
+
 jest.mock('react-native-gesture-handler', () => ({
   GestureHandlerRootView: require('react-native').View,
+}));
+jest.mock('react-native-mmkv', () => ({
+  createMMKV: () => {
+    const values = new Map<string, string>();
+    return {
+      getString: (key: string) => values.get(key),
+      set: (key: string, value: string) => values.set(key, value),
+      remove: (key: string) => values.delete(key),
+    };
+  },
 }));
 jest.mock('@gorhom/bottom-sheet', () => {
   const MockView = require('react-native').View;

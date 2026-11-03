@@ -29,14 +29,20 @@ export function AppBottomSheet({
   scrollable = false,
 }: SheetProps) {
   const ref = useRef<BottomSheetModal>(null);
+  const presentedRef = useRef(false);
   const { colors, radius } = useAppTheme();
   useEffect(() => {
-    if (visible) {
+    if (visible && !presentedRef.current) {
+      presentedRef.current = true;
       ref.current?.present();
-    } else {
+    } else if (!visible && presentedRef.current) {
       ref.current?.dismiss();
     }
   }, [visible]);
+  const handleDismiss = useCallback(() => {
+    presentedRef.current = false;
+    onDismiss();
+  }, [onDismiss]);
   const backdrop = useCallback(
     (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
       <BottomSheetBackdrop
@@ -62,7 +68,7 @@ export function AppBottomSheet({
       enablePanDownToClose
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
-      onDismiss={onDismiss}
+      onDismiss={handleDismiss}
       backdropComponent={backdrop}
       backgroundStyle={{
         backgroundColor: colors.surface,

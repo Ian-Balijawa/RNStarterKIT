@@ -9,9 +9,9 @@ export function AppCard({ style, ...props }: ViewProps) {
       style={[
         styles.card,
         {
-          backgroundColor: colors.surface,
+          // backgroundColor: colors.surface,
           borderColor: colors.border,
-          borderRadius: radius.lg,
+          borderRadius: radius.sm,
         },
         style,
       ]}
