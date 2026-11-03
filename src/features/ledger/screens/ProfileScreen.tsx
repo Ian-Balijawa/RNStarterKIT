@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { AppScreen } from '../../../components/layout/AppScreen';
 import { AppTextInput } from '../../../components/forms/AppTextInput';
 import { AppButton } from '../../../components/ui/AppButton';
@@ -66,252 +72,310 @@ export function ProfileScreen({
     setSaved(true);
   };
   return (
-    <AppScreen
-      scroll
-      keyboardAware
-      padded={false}
-      safeTop={false}
-      contentContainerStyle={ledgerStyles.scrollContent}>
-      <View style={styles.topBar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back to overview"
-          onPress={onBack}
-          style={styles.backButton}>
-          <AppText variant="label" style={{ color: colors.primary }}>
-            ‹ Overview
-          </AppText>
-        </Pressable>
-      </View>
-      <View style={styles.intro}>
-        <ProfileAvatar name={profile?.name ?? name} size={72} />
-        <View style={styles.introText}>
-          <AppText variant="caption" muted style={styles.eyebrow}>
-            MY LEDGER
-          </AppText>
-          <AppText variant="display" numberOfLines={2}>
-            {displayName}
-          </AppText>
-          <AppText muted>
-            {profile
-              ? 'Your money at a glance'
-              : 'Add your details to make this ledger yours.'}
-          </AppText>
-        </View>
-      </View>
-      <View style={[styles.balanceCard, { backgroundColor: colors.hero }]}>
-        <AppText style={styles.balanceLabel}>TOTAL ACROSS ACCOUNTS</AppText>
-        <AppText
-          style={styles.balanceAmount}
-          numberOfLines={1}
-          adjustsFontSizeToFit>
-          {formatUGX(totalBalance)}
-        </AppText>
-        <AppText style={styles.balanceDetail}>
-          {balances.length} {balances.length === 1 ? 'account' : 'accounts'} ·
-          Current balance
-        </AppText>
-      </View>
-      <View style={styles.grossRow}>
-        <View
-          style={[
-            styles.grossCard,
-            { backgroundColor: colors.successSurface },
-          ]}>
-          <LedgerIcon name="income" color={colors.success} size={19} />
-          <AppText variant="caption" muted>
-            GROSS INCOME · ALL TIME
-          </AppText>
-          <AppText
-            variant="heading"
-            style={styles.grossAmount}
-            numberOfLines={1}
-            adjustsFontSizeToFit>
-            {formatUGX(gross.income)}
-          </AppText>
-        </View>
-        <View
-          style={[styles.grossCard, { backgroundColor: colors.dangerSurface }]}>
-          <LedgerIcon name="expense" color={colors.danger} size={19} />
-          <AppText variant="caption" muted>
-            GROSS EXPENSES · ALL TIME
-          </AppText>
-          <AppText
-            variant="heading"
-            style={styles.grossAmount}
-            numberOfLines={1}
-            adjustsFontSizeToFit>
-            {formatUGX(gross.expense)}
-          </AppText>
-        </View>
-      </View>
-      <View style={styles.section}>
-        <SectionTitle
-          title="Accounts"
-          action="View all"
-          onPress={() => onSelectTab('accounts')}
-        />
-        {balances.length ? (
-          <Surface style={styles.listSurface}>
-            {balances.slice(0, 3).map(({ account, balance }, index) => (
-              <Pressable
-                key={account.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${account.name}, ${formatUGX(balance)}`}
-                onPress={() => onOpenDialog({ kind: 'account', item: account })}
-                style={({ pressed }) => [
-                  styles.accountRow,
-                  index < Math.min(balances.length, 3) - 1 && {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderColor: colors.border,
-                  },
-                  { opacity: pressed ? 0.65 : 1 },
-                ]}>
-                <View
-                  style={[
-                    styles.accountIcon,
-                    { backgroundColor: colors.successSurface },
-                  ]}>
-                  <LedgerIcon name="wallet" color={colors.primary} size={20} />
-                </View>
-                <AppText
-                  variant="label"
-                  style={styles.accountName}
-                  numberOfLines={1}>
-                  {account.name}
-                </AppText>
-                <AppText variant="label" numberOfLines={1} adjustsFontSizeToFit>
-                  {formatUGX(balance)}
-                </AppText>
-              </Pressable>
-            ))}
-            {balances.length > 3 ? (
-              <AppText variant="caption" muted style={styles.moreAccounts}>
-                {balances.length - 3} more{' '}
-                {balances.length - 3 === 1 ? 'account' : 'accounts'}
+    <KeyboardAvoidingView
+      style={ledgerStyles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <AppScreen
+        scroll
+        padded={false}
+        safeTop={false}
+        contentContainerStyle={ledgerStyles.scrollContent}
+        collapseThreshold={120}
+        collapsedHeader={
+          <View style={styles.collapsed}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back to overview"
+              onPress={onBack}
+              style={styles.collapsedBack}>
+              <AppText variant="heading" style={{ color: colors.primary }}>
+                ‹
               </AppText>
-            ) : null}
-          </Surface>
-        ) : (
-          <Surface>
-            <AppText muted>No accounts yet. Add one from Accounts.</AppText>
-          </Surface>
-        )}
-      </View>
-      <View style={styles.section}>
-        <SectionTitle
-          title="Recent activity"
-          action="View all"
-          onPress={() => onSelectTab('activity')}
-        />
-        {recentActivity.length ? (
-          <Surface style={styles.listSurface}>
-            {recentActivity.map(item => (
-              <EntryRow
-                key={item.id}
-                item={item}
-                ledger={ledger}
-                onPress={() =>
-                  onOpenDialog({ kind: 'transactionDetail', item })
-                }
-              />
-            ))}
-            {showSeparateExpense ? (
-              <View>
-                <AppText
-                  variant="caption"
-                  muted
-                  style={styles.latestExpenseLabel}>
-                  LATEST EXPENSE
+            </Pressable>
+            <ProfileAvatar name={profile?.name ?? name} size={32} />
+            <View style={styles.collapsedName}>
+              <AppText variant="label" numberOfLines={1}>
+                {displayName}
+              </AppText>
+            </View>
+            <View style={styles.collapsedBalance}>
+              <AppText variant="caption" muted>
+                TOTAL BALANCE
+              </AppText>
+              <AppText variant="label" numberOfLines={1} adjustsFontSizeToFit>
+                {formatUGX(totalBalance)}
+              </AppText>
+            </View>
+          </View>
+        }>
+        <View style={styles.topBar}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back to overview"
+            onPress={onBack}
+            style={styles.backButton}>
+            <AppText variant="label" style={{ color: colors.primary }}>
+              ‹ Overview
+            </AppText>
+          </Pressable>
+        </View>
+        <View style={styles.intro}>
+          <ProfileAvatar name={profile?.name ?? name} size={72} />
+          <View style={styles.introText}>
+            <AppText variant="caption" muted style={styles.eyebrow}>
+              MY LEDGER
+            </AppText>
+            <AppText variant="display" numberOfLines={2}>
+              {displayName}
+            </AppText>
+            <AppText muted>
+              {profile
+                ? 'Your money at a glance'
+                : 'Add your details to make this ledger yours.'}
+            </AppText>
+          </View>
+        </View>
+        <View style={[styles.balanceCard, { backgroundColor: colors.hero }]}>
+          <AppText style={styles.balanceLabel}>TOTAL ACROSS ACCOUNTS</AppText>
+          <AppText
+            style={styles.balanceAmount}
+            numberOfLines={1}
+            adjustsFontSizeToFit>
+            {formatUGX(totalBalance)}
+          </AppText>
+          <AppText style={styles.balanceDetail}>
+            {balances.length} {balances.length === 1 ? 'account' : 'accounts'} ·
+            Current balance
+          </AppText>
+        </View>
+        <View style={styles.grossRow}>
+          <View
+            style={[
+              styles.grossCard,
+              { backgroundColor: colors.successSurface },
+            ]}>
+            <LedgerIcon name="income" color={colors.success} size={19} />
+            <AppText variant="caption" muted>
+              GROSS INCOME · ALL TIME
+            </AppText>
+            <AppText
+              variant="heading"
+              style={styles.grossAmount}
+              numberOfLines={1}
+              adjustsFontSizeToFit>
+              {formatUGX(gross.income)}
+            </AppText>
+          </View>
+          <View
+            style={[
+              styles.grossCard,
+              { backgroundColor: colors.dangerSurface },
+            ]}>
+            <LedgerIcon name="expense" color={colors.danger} size={19} />
+            <AppText variant="caption" muted>
+              GROSS EXPENSES · ALL TIME
+            </AppText>
+            <AppText
+              variant="heading"
+              style={styles.grossAmount}
+              numberOfLines={1}
+              adjustsFontSizeToFit>
+              {formatUGX(gross.expense)}
+            </AppText>
+          </View>
+        </View>
+        <View style={styles.section}>
+          <SectionTitle
+            title="Accounts"
+            action="View all"
+            onPress={() => onSelectTab('accounts')}
+          />
+          {balances.length ? (
+            <Surface style={styles.listSurface}>
+              {balances.slice(0, 3).map(({ account, balance }, index) => (
+                <Pressable
+                  key={account.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${account.name}, ${formatUGX(balance)}`}
+                  onPress={() =>
+                    onOpenDialog({ kind: 'account', item: account })
+                  }
+                  style={({ pressed }) => [
+                    styles.accountRow,
+                    index < Math.min(balances.length, 3) - 1 && {
+                      borderBottomWidth: StyleSheet.hairlineWidth,
+                      borderColor: colors.border,
+                    },
+                    { opacity: pressed ? 0.65 : 1 },
+                  ]}>
+                  <View
+                    style={[
+                      styles.accountIcon,
+                      { backgroundColor: colors.successSurface },
+                    ]}>
+                    <LedgerIcon
+                      name="wallet"
+                      color={colors.primary}
+                      size={20}
+                    />
+                  </View>
+                  <AppText
+                    variant="label"
+                    style={styles.accountName}
+                    numberOfLines={1}>
+                    {account.name}
+                  </AppText>
+                  <AppText
+                    variant="label"
+                    numberOfLines={1}
+                    adjustsFontSizeToFit>
+                    {formatUGX(balance)}
+                  </AppText>
+                </Pressable>
+              ))}
+              {balances.length > 3 ? (
+                <AppText variant="caption" muted style={styles.moreAccounts}>
+                  {balances.length - 3} more{' '}
+                  {balances.length - 3 === 1 ? 'account' : 'accounts'}
                 </AppText>
+              ) : null}
+            </Surface>
+          ) : (
+            <Surface>
+              <AppText muted>No accounts yet. Add one from Accounts.</AppText>
+            </Surface>
+          )}
+        </View>
+        <View style={styles.section}>
+          <SectionTitle
+            title="Recent activity"
+            action="View all"
+            onPress={() => onSelectTab('activity')}
+          />
+          {recentActivity.length ? (
+            <Surface style={styles.listSurface}>
+              {recentActivity.map(item => (
                 <EntryRow
-                  item={latestExpense}
+                  key={item.id}
+                  item={item}
                   ledger={ledger}
                   onPress={() =>
-                    onOpenDialog({
-                      kind: 'transactionDetail',
-                      item: latestExpense,
-                    })
+                    onOpenDialog({ kind: 'transactionDetail', item })
                   }
                 />
-              </View>
-            ) : null}
-          </Surface>
-        ) : (
-          <Surface>
-            <AppText muted>
-              Your latest transactions and expenses will appear here.
-            </AppText>
-          </Surface>
-        )}
-      </View>
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ]}>
-        <View style={styles.formHeading}>
-          <AppText variant="heading">
-            {profile ? 'Your details' : 'Create your profile'}
-          </AppText>
-          <AppText variant="caption" muted>
-            {profile
-              ? 'Saved on this device.'
-              : 'Add your name and phone number to personalize your ledger.'}
-          </AppText>
+              ))}
+              {showSeparateExpense ? (
+                <View>
+                  <AppText
+                    variant="caption"
+                    muted
+                    style={styles.latestExpenseLabel}>
+                    LATEST EXPENSE
+                  </AppText>
+                  <EntryRow
+                    item={latestExpense}
+                    ledger={ledger}
+                    onPress={() =>
+                      onOpenDialog({
+                        kind: 'transactionDetail',
+                        item: latestExpense,
+                      })
+                    }
+                  />
+                </View>
+              ) : null}
+            </Surface>
+          ) : (
+            <Surface>
+              <AppText muted>
+                Your latest transactions and expenses will appear here.
+              </AppText>
+            </Surface>
+          )}
         </View>
-        <AppTextInput
-          label="Full name"
-          value={name}
-          onChangeText={value => {
-            setName(value);
-            setSaved(false);
-          }}
-          autoCapitalize="words"
-          autoComplete="name"
-          returnKeyType="next"
-          required
-        />
-        <AppTextInput
-          label="Phone number"
-          value={phone}
-          onChangeText={value => {
-            setPhone(value);
-            setSaved(false);
-          }}
-          keyboardType="phone-pad"
-          autoComplete="tel"
-          placeholder="e.g. +256 700 000 000"
-          required
-        />
-        {error ? (
-          <AppText
-            variant="caption"
-            accessibilityLiveRegion="polite"
-            style={{ color: colors.danger }}>
-            {error}
-          </AppText>
-        ) : null}
-        {saved ? (
-          <AppText
-            variant="caption"
-            accessibilityLiveRegion="polite"
-            style={{ color: colors.success }}>
-            Profile saved on this device.
-          </AppText>
-        ) : null}
-        <AppButton
-          title={profile ? 'Save changes' : 'Create profile'}
-          onPress={submit}
-        />
-      </View>
-    </AppScreen>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}>
+          <View style={styles.formHeading}>
+            <AppText variant="heading">
+              {profile ? 'Your details' : 'Create your profile'}
+            </AppText>
+            <AppText variant="caption" muted>
+              {profile
+                ? 'Saved on this device.'
+                : 'Add your name and phone number to personalize your ledger.'}
+            </AppText>
+          </View>
+          <AppTextInput
+            label="Full name"
+            value={name}
+            onChangeText={value => {
+              setName(value);
+              setSaved(false);
+            }}
+            autoCapitalize="words"
+            autoComplete="name"
+            returnKeyType="next"
+            required
+          />
+          <AppTextInput
+            label="Phone number"
+            value={phone}
+            onChangeText={value => {
+              setPhone(value);
+              setSaved(false);
+            }}
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            placeholder="e.g. +256 700 000 000"
+            required
+          />
+          {error ? (
+            <AppText
+              variant="caption"
+              accessibilityLiveRegion="polite"
+              style={{ color: colors.danger }}>
+              {error}
+            </AppText>
+          ) : null}
+          {saved ? (
+            <AppText
+              variant="caption"
+              accessibilityLiveRegion="polite"
+              style={{ color: colors.success }}>
+              Profile saved on this device.
+            </AppText>
+          ) : null}
+          <AppButton
+            title={profile ? 'Save changes' : 'Create profile'}
+            onPress={submit}
+          />
+        </View>
+      </AppScreen>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   topBar: { alignItems: 'flex-start' },
   backButton: { minHeight: 44, justifyContent: 'center' },
+  collapsed: {
+    width: '100%',
+    maxWidth: 680,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  collapsedBack: {
+    minWidth: 32,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  collapsedName: { flex: 1, minWidth: 0 },
+  collapsedBalance: { alignItems: 'flex-end', gap: 2, maxWidth: '45%' },
   intro: {
     flexDirection: 'row',
     alignItems: 'center',
