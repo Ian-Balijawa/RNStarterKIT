@@ -7,6 +7,7 @@ import { AppTextInput } from './AppTextInput';
 import { AppText } from '../ui/AppText';
 import { AppIcon } from '../ui/AppIcon';
 import { AppButton } from '../ui/AppButton';
+import { BottomSheetInputContext } from '../overlays/BottomSheetInputContext';
 export type SelectOption = { label: string; value: string };
 export function AppSelect({
   label,
@@ -17,6 +18,7 @@ export function AppSelect({
   searchable = true,
   error,
   disabled,
+  placeholder = 'Select an option',
 }: {
   label: string;
   options: SelectOption[];
@@ -26,12 +28,13 @@ export function AppSelect({
   searchable?: boolean;
   error?: string;
   disabled?: boolean;
+  placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const { colors, radius } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const selected = Array.isArray(value) ? value : value ? [value] : [];
+  const selected = Array.isArray(value) ? value : value === null ? [] : [value];
   const visible = useMemo(
     () =>
       options.filter(option =>
@@ -43,7 +46,7 @@ export function AppSelect({
     options
       .filter(option => selected.includes(option.value))
       .map(option => option.label)
-      .join(', ') || 'Select an option';
+      .join(', ') || placeholder;
   const select = (option: SelectOption) => {
     if (multiple) {
       onChange(
@@ -78,59 +81,61 @@ export function AppSelect({
         visible={open}
         animationType="slide"
         onRequestClose={() => setOpen(false)}>
-        <View
-          style={[
-            styles.modal,
-            {
-              backgroundColor: colors.background,
-              paddingTop: insets.top + 16,
-              paddingBottom: insets.bottom + 16,
-            },
-          ]}>
-          <View style={styles.header}>
-            <AppText variant="heading">{label}</AppText>
-            <AppButton
-              icon="close"
-              variant="ghost"
-              accessibilityLabel="Close"
-              onPress={() => setOpen(false)}
+        <BottomSheetInputContext.Provider value={false}>
+          <View
+            style={[
+              styles.modal,
+              {
+                backgroundColor: colors.background,
+                paddingTop: insets.top + 16,
+                paddingBottom: insets.bottom + 16,
+              },
+            ]}>
+            <View style={styles.header}>
+              <AppText variant="heading">{label}</AppText>
+              <AppButton
+                icon="close"
+                variant="ghost"
+                accessibilityLabel="Close"
+                onPress={() => setOpen(false)}
+              />
+            </View>
+            {searchable ? (
+              <AppTextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search options"
+                prefixIcon="search"
+                clearable
+              />
+            ) : null}
+            <FlatList
+              data={visible}
+              keyExtractor={item => item.value}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <Pressable
+                  accessibilityRole={multiple ? 'checkbox' : 'radio'}
+                  accessibilityState={
+                    multiple
+                      ? { checked: selected.includes(item.value) }
+                      : { selected: selected.includes(item.value) }
+                  }
+                  onPress={() => select(item)}
+                  style={styles.option}>
+                  <AppText style={styles.flex}>{item.label}</AppText>
+                  {selected.includes(item.value) ? (
+                    <AppIcon name="check" color={colors.primary} />
+                  ) : null}
+                </Pressable>
+              )}
+              ListEmptyComponent={<AppText muted>No matching options</AppText>}
             />
+            {multiple ? (
+              <AppButton title="Done" onPress={() => setOpen(false)} />
+            ) : null}
           </View>
-          {searchable ? (
-            <AppTextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Search options"
-              prefixIcon="search"
-              clearable
-            />
-          ) : null}
-          <FlatList
-            data={visible}
-            keyExtractor={item => item.value}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <Pressable
-                accessibilityRole={multiple ? 'checkbox' : 'radio'}
-                accessibilityState={
-                  multiple
-                    ? { checked: selected.includes(item.value) }
-                    : { selected: selected.includes(item.value) }
-                }
-                onPress={() => select(item)}
-                style={styles.option}>
-                <AppText style={styles.flex}>{item.label}</AppText>
-                {selected.includes(item.value) ? (
-                  <AppIcon name="check" color={colors.primary} />
-                ) : null}
-              </Pressable>
-            )}
-            ListEmptyComponent={<AppText muted>No matching options</AppText>}
-          />
-          {multiple ? (
-            <AppButton title="Done" onPress={() => setOpen(false)} />
-          ) : null}
-        </View>
+        </BottomSheetInputContext.Provider>
       </Modal>
     </AppFormField>
   );

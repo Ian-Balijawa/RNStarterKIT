@@ -1,19 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useImperativeHandle, useState } from 'react';
 import { View } from 'react-native';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppText } from '../../../components/ui/AppText';
 import { AppTextInput } from '../../../components/forms/AppTextInput';
 import { Account, AccountType, newId } from '../model';
-import { ChoiceRow } from './ChoiceRow';
+import { LedgerChoiceField } from './LedgerChoiceField';
 import { ErrorText } from './FormControls';
 import { styles } from './styles';
+import { LedgerFormHandle } from './types';
 
 export function AccountForm({
   initial,
   onSave,
+  submitRef,
+  onErrorChange,
 }: {
   initial?: Account;
   onSave: (account: Account) => void;
+  submitRef?: React.Ref<LedgerFormHandle>;
+  onErrorChange?: (message: string) => void;
 }) {
   const [name, setName] = useState(initial?.name ?? '');
   const [type, setType] = useState<AccountType>(
@@ -35,6 +40,10 @@ export function AccountForm({
       openingBalance: amount,
     });
   };
+  useImperativeHandle(submitRef, () => ({ submit }));
+  useEffect(() => {
+    onErrorChange?.(error);
+  }, [error, onErrorChange]);
   return (
     <View style={styles.form}>
       <AppTextInput
@@ -44,7 +53,7 @@ export function AccountForm({
         placeholder="e.g. MTN Mobile Money"
         required
       />
-      <ChoiceRow
+      <LedgerChoiceField
         label="Account type"
         options={[
           { label: 'Mobile money', value: 'mobile_money' },
@@ -67,11 +76,13 @@ export function AccountForm({
         Opening balance is the amount this account held before you started
         tracking here.
       </AppText>
-      <ErrorText message={error} />
-      <AppButton
-        title={initial ? 'Save changes' : 'Add account'}
-        onPress={submit}
-      />
+      {!submitRef ? <ErrorText message={error} /> : null}
+      {!submitRef ? (
+        <AppButton
+          title={initial ? 'Save changes' : 'Add account'}
+          onPress={submit}
+        />
+      ) : null}
     </View>
   );
 }

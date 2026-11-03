@@ -1,23 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect, useImperativeHandle, useState } from 'react';
 import { View } from 'react-native';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppText } from '../../../components/ui/AppText';
 import { AppTextInput } from '../../../components/forms/AppTextInput';
 import { Budget, LedgerState, newId, parseAmount } from '../model';
-import { ChoiceRow } from './ChoiceRow';
+import { LedgerChoiceField } from './LedgerChoiceField';
 import { ErrorText } from './FormControls';
 import { styles } from './styles';
+import { LedgerFormHandle } from './types';
 
 export function BudgetForm({
   ledger,
   initial,
   onSave,
   onDelete,
+  submitRef,
+  onErrorChange,
 }: {
   ledger: LedgerState;
   initial?: Budget;
   onSave: (budget: Budget) => void;
   onDelete?: () => void;
+  submitRef?: React.Ref<LedgerFormHandle>;
+  onErrorChange?: (message: string) => void;
 }) {
   const categories = ledger.categories.filter(item => item.kind === 'expense');
   const [name, setName] = useState(initial?.name ?? '');
@@ -45,6 +50,10 @@ export function BudgetForm({
       period,
     });
   };
+  useImperativeHandle(submitRef, () => ({ submit }));
+  useEffect(() => {
+    onErrorChange?.(error);
+  }, [error, onErrorChange]);
   return (
     <View style={styles.form}>
       <AppTextInput
@@ -53,7 +62,7 @@ export function BudgetForm({
         onChangeText={setName}
         placeholder="e.g. Fuel for work"
       />
-      <ChoiceRow
+      <LedgerChoiceField
         label="Category"
         options={categories.map(item => ({ label: item.name, value: item.id }))}
         value={categoryId}
@@ -63,7 +72,7 @@ export function BudgetForm({
         }}
       />
       {category ? (
-        <ChoiceRow
+        <LedgerChoiceField
           label="Subcategory"
           options={[
             { label: 'Entire category', value: '' },
@@ -83,7 +92,7 @@ export function BudgetForm({
         keyboardType="numeric"
         required
       />
-      <ChoiceRow
+      <LedgerChoiceField
         label="Budget period"
         options={[
           { label: 'Weekly', value: 'weekly' },
@@ -96,11 +105,13 @@ export function BudgetForm({
         Spending resets each {period === 'weekly' ? 'Monday' : 'month'}. Budgets
         never change account balances.
       </AppText>
-      <ErrorText message={error} />
-      <AppButton
-        title={initial ? 'Save budget' : 'Create budget'}
-        onPress={submit}
-      />
+      {!submitRef ? <ErrorText message={error} /> : null}
+      {!submitRef ? (
+        <AppButton
+          title={initial ? 'Save budget' : 'Create budget'}
+          onPress={submit}
+        />
+      ) : null}
       {initial && onDelete ? (
         <AppButton title="Delete budget" variant="danger" onPress={onDelete} />
       ) : null}

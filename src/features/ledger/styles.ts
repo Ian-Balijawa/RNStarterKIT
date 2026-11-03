@@ -12,6 +12,7 @@ export const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
+  scrollContentWithFab: { paddingBottom: 112 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -20,13 +21,6 @@ export const styles = StyleSheet.create({
   },
   eyebrow: { letterSpacing: 2, fontWeight: '800', marginBottom: 4 },
   pageTitle: { fontSize: 30 },
-  headerAdd: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   hero: {
     borderRadius: 28,
     padding: 24,

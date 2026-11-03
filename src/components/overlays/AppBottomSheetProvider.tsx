@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { AppBottomSheet } from './AppBottomSheet';
 
 export type AppSheetOptions = {
@@ -12,6 +13,7 @@ export type AppSheetOptions = {
   children: React.ReactNode;
   snapPoints?: Array<string | number>;
   scrollable?: boolean;
+  footer?: React.ReactNode;
 };
 type SheetContextValue = {
   showSheet: (options: AppSheetOptions) => void;
@@ -37,20 +39,23 @@ export function AppBottomSheetProvider({
     [showSheet, hideSheet],
   );
   return (
-    <SheetContext.Provider value={context}>
-      {children}
-      <AppBottomSheet
-        visible={visible}
-        onDismiss={() => {
-          setVisible(false);
-          setRequest(null);
-        }}
-        title={request?.title}
-        snapPoints={request?.snapPoints}
-        scrollable={request?.scrollable}>
-        {request?.children}
-      </AppBottomSheet>
-    </SheetContext.Provider>
+    <BottomSheetModalProvider>
+      <SheetContext.Provider value={context}>
+        {children}
+        <AppBottomSheet
+          visible={visible}
+          onDismiss={() => {
+            setVisible(false);
+            setRequest(null);
+          }}
+          title={request?.title}
+          snapPoints={request?.snapPoints}
+          scrollable={request?.scrollable}
+          footer={request?.footer}>
+          {request?.children}
+        </AppBottomSheet>
+      </SheetContext.Provider>
+    </BottomSheetModalProvider>
   );
 }
 

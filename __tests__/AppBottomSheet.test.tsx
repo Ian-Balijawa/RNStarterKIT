@@ -7,9 +7,13 @@ const mockDismiss = jest.fn();
 
 jest.mock('../src/theme/theme', () => ({
   useAppTheme: () => ({
-    colors: { surface: '#fff', muted: '#888' },
+    colors: { surface: '#fff', muted: '#888', border: '#ddd' },
     radius: { lg: 16 },
   }),
+}));
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 24, bottom: 16, left: 0, right: 0 }),
 }));
 
 jest.mock('@gorhom/bottom-sheet', () => {
@@ -26,6 +30,7 @@ jest.mock('@gorhom/bottom-sheet', () => {
       },
     ),
     BottomSheetBackdrop: MockView,
+    BottomSheetFooter: MockView,
     BottomSheetScrollView: MockView,
     BottomSheetView: MockView,
   };

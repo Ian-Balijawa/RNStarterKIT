@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useImperativeHandle, useState } from 'react';
 import { View } from 'react-native';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppTextInput } from '../../../components/forms/AppTextInput';
 import { Category } from '../model';
-import { ChoiceRow } from './ChoiceRow';
+import { LedgerChoiceField } from './LedgerChoiceField';
 import { ErrorText } from './FormControls';
 import { styles } from './styles';
+import { LedgerFormHandle } from './types';
 
 export function CategoryForm({
   existing,
   onSave,
+  submitRef,
+  onErrorChange,
 }: {
   existing: Category[];
   onSave: (
@@ -17,14 +20,39 @@ export function CategoryForm({
     kind: 'expense' | 'income',
     subcategories: string[],
   ) => void;
+  submitRef?: React.Ref<LedgerFormHandle>;
+  onErrorChange?: (message: string) => void;
 }) {
   const [name, setName] = useState('');
   const [kind, setKind] = useState<'expense' | 'income'>('expense');
   const [subcategories, setSubcategories] = useState('');
   const [error, setError] = useState('');
+  const submit = () => {
+    if (!name.trim()) return setError('Enter a category name.');
+    if (
+      existing.some(
+        item =>
+          item.kind === kind &&
+          item.name.toLowerCase() === name.trim().toLowerCase(),
+      )
+    )
+      return setError('This category already exists.');
+    onSave(
+      name.trim(),
+      kind,
+      subcategories
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean),
+    );
+  };
+  useImperativeHandle(submitRef, () => ({ submit }));
+  useEffect(() => {
+    onErrorChange?.(error);
+  }, [error, onErrorChange]);
   return (
     <View style={styles.form}>
-      <ChoiceRow
+      <LedgerChoiceField
         label="Used for"
         options={[
           { label: 'Expenses', value: 'expense' },
@@ -47,29 +75,8 @@ export function CategoryForm({
         placeholder="e.g. Tuition, Books, Supplies"
         hint="Separate names with commas. You can add more later."
       />
-      <ErrorText message={error} />
-      <AppButton
-        title="Save category"
-        onPress={() => {
-          if (!name.trim()) return setError('Enter a category name.');
-          if (
-            existing.some(
-              item =>
-                item.kind === kind &&
-                item.name.toLowerCase() === name.trim().toLowerCase(),
-            )
-          )
-            return setError('This category already exists.');
-          onSave(
-            name.trim(),
-            kind,
-            subcategories
-              .split(',')
-              .map(item => item.trim())
-              .filter(Boolean),
-          );
-        }}
-      />
+      {!submitRef ? <ErrorText message={error} /> : null}
+      {!submitRef ? <AppButton title="Save category" onPress={submit} /> : null}
     </View>
   );
 }

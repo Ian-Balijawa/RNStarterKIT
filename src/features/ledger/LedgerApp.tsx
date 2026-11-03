@@ -122,10 +122,7 @@ export function LedgerApp() {
     setDialog(null);
   };
   const header = (
-    <LedgerHeader
-      title={NAV.find(item => item.id === tab)?.label ?? ''}
-      onAddTransaction={() => setDialog({ kind: 'transaction' })}
-    />
+    <LedgerHeader title={NAV.find(item => item.id === tab)?.label ?? ''} />
   );
 
   return (
@@ -200,8 +197,6 @@ export function LedgerApp() {
         onAddSubcategory={addSubcategory}
         onSaveEntry={saveEntry}
         onRecordSchedule={recordSchedule}
-        topInset={insets.top}
-        bottomInset={insets.bottom}
       />
     </View>
   );

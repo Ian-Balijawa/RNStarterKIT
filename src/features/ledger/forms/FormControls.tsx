@@ -23,7 +23,11 @@ export function LinkButton({
   const { colors } = useAppTheme();
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={styles.link}>
-      <AppText variant="label" style={{ color: colors.primary }}>
+      <AppText
+        variant="label"
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={{ color: colors.primary }}>
         {title}
       </AppText>
     </Pressable>

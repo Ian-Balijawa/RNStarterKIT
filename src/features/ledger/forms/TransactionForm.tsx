@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useImperativeHandle, useState } from 'react';
 import { View } from 'react-native';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppTextInput } from '../../../components/forms/AppTextInput';
@@ -12,9 +12,10 @@ import {
   newId,
   parseAmount,
 } from '../model';
-import { ChoiceRow } from './ChoiceRow';
+import { LedgerChoiceField } from './LedgerChoiceField';
 import { ErrorText, LinkButton } from './FormControls';
 import { styles } from './styles';
+import { LedgerFormHandle } from './types';
 
 export function TransactionForm({
   ledger,
@@ -22,12 +23,18 @@ export function TransactionForm({
   onSave,
   onAddCategory,
   onAddSubcategory,
+  submitRef,
+  onActionTitleChange,
+  onErrorChange,
 }: {
   ledger: LedgerState;
   initialKind?: EntryKind;
   onSave: (entry: Transaction | Schedule, scheduled: boolean) => void;
   onAddCategory: (name: string, kind: 'expense' | 'income') => string;
   onAddSubcategory: (categoryId: string, name: string) => void;
+  submitRef?: React.Ref<LedgerFormHandle>;
+  onActionTitleChange?: (title: string) => void;
+  onErrorChange?: (message: string) => void;
 }) {
   const [kind, setKind] = useState<EntryKind>(initialKind);
   const [amount, setAmount] = useState('');
@@ -99,10 +106,22 @@ export function TransactionForm({
       onSave({ ...base, nextAt: when.toISOString(), recurrence }, true);
     else onSave({ ...base, occurredAt: when.toISOString() }, false);
   };
+  useImperativeHandle(submitRef, () => ({ submit }));
+  const actionTitle = scheduled
+    ? 'Save schedule'
+    : kind === 'transfer'
+    ? 'Transfer funds'
+    : `Save ${kind}`;
+  useEffect(() => {
+    onActionTitleChange?.(actionTitle);
+  }, [actionTitle, onActionTitleChange]);
+  useEffect(() => {
+    onErrorChange?.(error);
+  }, [error, onErrorChange]);
 
   return (
     <View style={styles.form}>
-      <ChoiceRow
+      <LedgerChoiceField
         label="Transaction type"
         options={[
           { label: 'Expense', value: 'expense' },
@@ -120,7 +139,7 @@ export function TransactionForm({
         placeholder="e.g. 25,000"
         required
       />
-      <ChoiceRow
+      <LedgerChoiceField
         label={
           kind === 'transfer'
             ? 'From account'
@@ -136,7 +155,7 @@ export function TransactionForm({
         onChange={setAccountId}
       />
       {kind === 'transfer' ? (
-        <ChoiceRow
+        <LedgerChoiceField
           label="To account"
           options={ledger.accounts
             .filter(item => item.id !== accountId)
@@ -146,7 +165,7 @@ export function TransactionForm({
         />
       ) : (
         <>
-          <ChoiceRow
+          <LedgerChoiceField
             label="Category"
             options={categories.map(item => ({
               label: item.name,
@@ -179,7 +198,7 @@ export function TransactionForm({
           ) : null}
           {currentCategory ? (
             <>
-              <ChoiceRow
+              <LedgerChoiceField
                 label="Subcategory (optional)"
                 options={[
                   { label: 'None', value: '' },
@@ -220,7 +239,7 @@ export function TransactionForm({
         onChangeText={setNote}
         placeholder="What was this for?"
       />
-      <ChoiceRow
+      <LedgerChoiceField
         label="When"
         options={[
           { label: 'Now / recorded', value: 'normal' },
@@ -240,7 +259,7 @@ export function TransactionForm({
         mode="datetime"
       />
       {scheduled ? (
-        <ChoiceRow
+        <LedgerChoiceField
           label="Repeat"
           options={[
             { label: 'Daily', value: 'daily' },
@@ -253,17 +272,8 @@ export function TransactionForm({
           onChange={setRecurrence}
         />
       ) : null}
-      <ErrorText message={error} />
-      <AppButton
-        title={
-          scheduled
-            ? 'Save schedule'
-            : kind === 'transfer'
-            ? 'Transfer funds'
-            : `Save ${kind}`
-        }
-        onPress={submit}
-      />
+      {!submitRef ? <ErrorText message={error} /> : null}
+      {!submitRef ? <AppButton title={actionTitle} onPress={submit} /> : null}
     </View>
   );
 }

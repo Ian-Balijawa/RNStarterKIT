@@ -6,6 +6,7 @@ import { AppThemeProvider } from './src/theme/theme';
 import { AppErrorBoundary } from './src/components/feedback/AppErrorBoundary';
 import { LedgerApp } from './src/features/ledger/LedgerApp';
 import { BiometricLock } from './src/components/security/BiometricLock';
+import { AppBottomSheetProvider } from './src/components/overlays/AppBottomSheetProvider';
 
 export default function App() {
   return (
@@ -13,9 +14,11 @@ export default function App() {
       <SafeAreaProvider>
         <AppThemeProvider>
           <AppErrorBoundary>
-            <BiometricLock>
-              <LedgerApp />
-            </BiometricLock>
+            <AppBottomSheetProvider>
+              <BiometricLock>
+                <LedgerApp />
+              </BiometricLock>
+            </AppBottomSheetProvider>
           </AppErrorBoundary>
         </AppThemeProvider>
       </SafeAreaProvider>
