@@ -13,14 +13,12 @@ export function BudgetForm({
   ledger,
   initial,
   onSave,
-  onDelete,
   submitRef,
   onErrorChange,
 }: {
   ledger: LedgerState;
   initial?: Budget;
   onSave: (budget: Budget) => void;
-  onDelete?: () => void;
   submitRef?: React.Ref<LedgerFormHandle>;
   onErrorChange?: (message: string) => void;
 }) {
@@ -31,7 +29,7 @@ export function BudgetForm({
   );
   const [subcategory, setSubcategory] = useState(initial?.subcategory ?? '');
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
-  const [period, setPeriod] = useState<'weekly' | 'monthly'>(
+  const [period, setPeriod] = useState<Budget['period']>(
     initial?.period ?? 'monthly',
   );
   const [error, setError] = useState('');
@@ -97,12 +95,13 @@ export function BudgetForm({
         options={[
           { label: 'Weekly', value: 'weekly' },
           { label: 'Monthly', value: 'monthly' },
+          { label: 'Yearly', value: 'yearly' },
         ]}
         value={period}
         onChange={setPeriod}
       />
       <AppText muted variant="caption">
-        Spending resets each {period === 'weekly' ? 'Monday' : 'month'}. Budgets
+        Spending resets each {period === 'weekly' ? 'Monday' : period === 'monthly' ? 'month' : 'year'}. Budgets
         never change account balances.
       </AppText>
       {!submitRef ? <ErrorText message={error} /> : null}
@@ -111,9 +110,6 @@ export function BudgetForm({
           title={initial ? 'Save budget' : 'Create budget'}
           onPress={submit}
         />
-      ) : null}
-      {initial && onDelete ? (
-        <AppButton title="Delete budget" variant="danger" onPress={onDelete} />
       ) : null}
     </View>
   );

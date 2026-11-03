@@ -7,6 +7,7 @@ export type LedgerIconName =
   | 'budget'
   | 'wallet'
   | 'categories'
+  | 'profile'
   | 'plus'
   | 'income'
   | 'expense'
@@ -69,6 +70,12 @@ export function LedgerIcon({
           <Rect x="14" y="3" width="7" height="7" rx="1.5" {...common} />
           <Rect x="3" y="14" width="7" height="7" rx="1.5" {...common} />
           <Rect x="14" y="14" width="7" height="7" rx="1.5" {...common} />
+        </>
+      )}
+      {name === 'profile' && (
+        <>
+          <Circle cx="12" cy="8" r="4" {...common} />
+          <Path d="M4.5 21v-2a7.5 7.5 0 0 1 15 0v2" {...common} />
         </>
       )}
       {name === 'plus' && (

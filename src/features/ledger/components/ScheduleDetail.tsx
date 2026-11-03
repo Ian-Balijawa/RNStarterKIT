@@ -9,10 +9,9 @@ import { styles } from '../styles';
 type Props = {
   item: Schedule;
   onRecord: () => void;
-  onDelete: () => void;
 };
 
-export function ScheduleDetail({ item, onRecord, onDelete }: Props) {
+export function ScheduleDetail({ item, onRecord }: Props) {
   return (
     <View style={styles.detail}>
       <AppText variant="display">{formatUGX(item.amount)}</AppText>
@@ -22,7 +21,6 @@ export function ScheduleDetail({ item, onRecord, onDelete }: Props) {
       </AppText>
       {item.note ? <AppText>{item.note}</AppText> : null}
       <AppButton title="Record this transaction now" onPress={onRecord} />
-      <AppButton title="Delete schedule" variant="danger" onPress={onDelete} />
     </View>
   );
 }

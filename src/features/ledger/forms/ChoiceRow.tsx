@@ -38,7 +38,11 @@ export function ChoiceRow<T extends string>({
             ]}>
             <AppText
               variant="label"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
               style={{
+                textAlign: 'center',
                 color:
                   value === option.value ? colors.primaryText : colors.text,
               }}>

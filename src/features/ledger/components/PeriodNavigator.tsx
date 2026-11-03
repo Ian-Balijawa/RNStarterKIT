@@ -14,6 +14,7 @@ function shiftPeriod(date: Date, period: Period, step: number) {
     next.setDate(1);
     next.setMonth(next.getMonth() + step);
   }
+  if (period === 'yearly') next.setFullYear(next.getFullYear() + step);
   return next;
 }
 
@@ -30,7 +31,9 @@ export function PeriodNavigator({
   const start = periodStart(period, date);
   const todayStart = periodStart(period, new Date());
   const label =
-    period === 'monthly'
+    period === 'yearly'
+      ? String(start.getFullYear())
+      : period === 'monthly'
       ? start.toLocaleDateString('en-UG', { month: 'long', year: 'numeric' })
       : period === 'weekly'
       ? `Week of ${dateLabel(start.toISOString())}`

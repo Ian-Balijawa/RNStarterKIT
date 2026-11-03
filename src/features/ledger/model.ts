@@ -12,7 +12,7 @@ export type Recurrence =
   | 'monthly'
   | 'quarterly'
   | 'yearly';
-export type Period = 'daily' | 'weekly' | 'monthly';
+export type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export type Account = {
   id: string;
@@ -47,7 +47,7 @@ export type Budget = {
   categoryId: string;
   subcategory?: string;
   amount: number;
-  period: 'weekly' | 'monthly';
+  period: 'weekly' | 'monthly' | 'yearly';
 };
 export type LedgerState = {
   accounts: Account[];
@@ -179,6 +179,7 @@ export function periodStart(period: Period, date: Date): Date {
   if (period === 'weekly')
     start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
   if (period === 'monthly') start.setDate(1);
+  if (period === 'yearly') start.setMonth(0, 1);
   return start;
 }
 
@@ -188,6 +189,7 @@ export function inPeriod(iso: string, period: Period, date: Date): boolean {
   if (period === 'daily') end.setDate(end.getDate() + 1);
   if (period === 'weekly') end.setDate(end.getDate() + 7);
   if (period === 'monthly') end.setMonth(end.getMonth() + 1);
+  if (period === 'yearly') end.setFullYear(end.getFullYear() + 1);
   const value = new Date(iso).getTime();
   return value >= start.getTime() && value < end.getTime();
 }

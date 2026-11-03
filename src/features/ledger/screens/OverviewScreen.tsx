@@ -32,6 +32,7 @@ type Props = {
   onAnchorDateChange: (date: Date) => void;
   onSelectTab: (tab: Tab) => void;
   onOpenDialog: (dialog: Dialog) => void;
+  showFloatingActions?: boolean;
 };
 
 export function OverviewScreen({
@@ -47,6 +48,7 @@ export function OverviewScreen({
   onAnchorDateChange,
   onSelectTab,
   onOpenDialog,
+  showFloatingActions = true,
 }: Props) {
   const { colors } = useAppTheme();
   return (
@@ -111,6 +113,7 @@ export function OverviewScreen({
             { label: 'Day', value: 'daily' },
             { label: 'Week', value: 'weekly' },
             { label: 'Month', value: 'monthly' },
+            { label: 'Year', value: 'yearly' },
           ]}
           value={period}
           onChange={onPeriodChange}
@@ -208,7 +211,7 @@ export function OverviewScreen({
         ) : (
           <EmptyNote
             title="Plan your spending"
-            body="Set a weekly or monthly limit for a category or subcategory."
+            body="Set a weekly, monthly, or yearly limit for a category or subcategory."
           />
         )}
         <SectionTitle
@@ -236,7 +239,7 @@ export function OverviewScreen({
           />
         )}
       </AppScreen>
-      <LedgerFloatingActions>
+      <LedgerFloatingActions visible={showFloatingActions}>
         <LedgerFloatingAction
           accessibilityLabel="Add transaction"
           onPress={() => onOpenDialog({ kind: 'transaction' })}

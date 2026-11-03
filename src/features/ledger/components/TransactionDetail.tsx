@@ -1,6 +1,5 @@
 import React from 'react';
 import { View } from 'react-native';
-import { AppButton } from '../../../components/ui/AppButton';
 import { AppText } from '../../../components/ui/AppText';
 import { dateLabel, timeLabel } from '../format';
 import { LedgerState, Transaction, formatUGX } from '../model';
@@ -10,10 +9,9 @@ import { Surface } from './Surface';
 type Props = {
   item: Transaction;
   ledger: LedgerState;
-  onDelete: () => void;
 };
 
-export function TransactionDetail({ item, ledger, onDelete }: Props) {
+export function TransactionDetail({ item, ledger }: Props) {
   return (
     <View style={styles.detail}>
       <AppText variant="display">{formatUGX(item.amount)}</AppText>
@@ -56,11 +54,6 @@ export function TransactionDetail({ item, ledger, onDelete }: Props) {
           </>
         ) : null}
       </Surface>
-      <AppButton
-        title="Delete transaction"
-        variant="danger"
-        onPress={onDelete}
-      />
     </View>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../theme/theme';
@@ -26,6 +26,8 @@ import { ActivityScreen } from './screens/ActivityScreen';
 import { BudgetsScreen } from './screens/BudgetsScreen';
 import { AccountsScreen } from './screens/AccountsScreen';
 import { CategoriesScreen } from './screens/CategoriesScreen';
+import { ProfileScreen } from './screens/ProfileScreen';
+import { LedgerProfile } from './profile';
 import { styles } from './styles';
 
 export function LedgerApp() {
@@ -36,8 +38,17 @@ export function LedgerApp() {
     'ledger.v1',
     INITIAL_LEDGER,
   );
+  const [profile, setProfile] = usePersistedState<LedgerProfile | null>(
+    preferences,
+    'ledger.profile.v1',
+    null,
+  );
   const [tab, setTab] = useState<Tab>('home');
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [sheetPresented, setSheetPresented] = useState(false);
+  useEffect(() => {
+    if (dialog) setSheetPresented(true);
+  }, [dialog]);
   const [period, setPeriod] = useState<Period>('monthly');
   const [anchorDate, setAnchorDate] = useState(new Date());
   const [activityKind, setActivityKind] = useState<'all' | EntryKind>('all');
@@ -122,7 +133,11 @@ export function LedgerApp() {
     setDialog(null);
   };
   const header = (
-    <LedgerHeader title={NAV.find(item => item.id === tab)?.label ?? ''} />
+    <LedgerHeader
+      title={NAV.find(item => item.id === tab)?.label ?? ''}
+      profileName={profile?.name}
+      onPressProfile={tab === 'home' ? () => setTab('profile') : undefined}
+    />
   );
 
   return (
@@ -147,6 +162,7 @@ export function LedgerApp() {
             onAnchorDateChange={setAnchorDate}
             onSelectTab={setTab}
             onOpenDialog={setDialog}
+            showFloatingActions={!dialog && !sheetPresented}
           />
         ) : tab === 'activity' ? (
           <ActivityScreen
@@ -161,12 +177,14 @@ export function LedgerApp() {
             activityKind={activityKind}
             onActivityKindChange={setActivityKind}
             onOpenDialog={setDialog}
+            showFloatingActions={!dialog && !sheetPresented}
           />
         ) : tab === 'budgets' ? (
           <BudgetsScreen
             header={header}
             ledger={ledger}
             onOpenDialog={setDialog}
+            showFloatingActions={!dialog && !sheetPresented}
           />
         ) : tab === 'accounts' ? (
           <AccountsScreen
@@ -174,25 +192,42 @@ export function LedgerApp() {
             balances={balances}
             totalBalance={totalBalance}
             onOpenDialog={setDialog}
+            showFloatingActions={!dialog && !sheetPresented}
+          />
+        ) : tab === 'profile' ? (
+          <ProfileScreen
+            profile={profile}
+            ledger={ledger}
+            balances={balances}
+            totalBalance={totalBalance}
+            recent={recent}
+            onSave={setProfile}
+            onBack={() => setTab('home')}
+            onSelectTab={setTab}
+            onOpenDialog={setDialog}
           />
         ) : (
           <CategoriesScreen
             header={header}
             ledger={ledger}
             onOpenDialog={setDialog}
+            showFloatingActions={!dialog && !sheetPresented}
           />
         )}
       </View>
-      <LedgerTabBar
-        tab={tab}
-        onSelectTab={setTab}
-        bottomInset={insets.bottom}
-      />
+      {tab !== 'profile' ? (
+        <LedgerTabBar
+          tab={tab}
+          onSelectTab={setTab}
+          bottomInset={insets.bottom}
+        />
+      ) : null}
       <LedgerDialog
         dialog={dialog}
         ledger={ledger}
         setLedger={setLedger}
         onClose={() => setDialog(null)}
+        onSheetDismissed={() => setSheetPresented(false)}
         onAddCategory={addCategory}
         onAddSubcategory={addSubcategory}
         onSaveEntry={saveEntry}

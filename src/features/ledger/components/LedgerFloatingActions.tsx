@@ -6,9 +6,12 @@ import { LedgerIcon } from '../LedgerIcon';
 
 export function LedgerFloatingActions({
   children,
+  visible = true,
 }: {
   children: React.ReactNode;
+  visible?: boolean;
 }) {
+  if (!visible) return null;
   return (
     <View pointerEvents="box-none" style={styles.stack}>
       {children}

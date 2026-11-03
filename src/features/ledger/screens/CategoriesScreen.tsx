@@ -21,11 +21,12 @@ type Props = {
   header: React.ReactNode;
   ledger: LedgerState;
   onOpenDialog: (dialog: Dialog) => void;
+  showFloatingActions?: boolean;
 };
 
 type CategoryKind = 'expense' | 'income';
 
-export function CategoriesScreen({ header, ledger, onOpenDialog }: Props) {
+export function CategoriesScreen({ header, ledger, onOpenDialog, showFloatingActions = true }: Props) {
   const { colors } = useAppTheme();
   const [kind, setKind] = useState<CategoryKind>('expense');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
@@ -161,7 +162,7 @@ export function CategoriesScreen({ header, ledger, onOpenDialog }: Props) {
           />
         )}
       </AppScreen>
-      <LedgerFloatingActions>
+      <LedgerFloatingActions visible={showFloatingActions}>
         <LedgerFloatingAction
           label="Add subcategory"
           accessibilityLabel={

@@ -8,7 +8,13 @@ import type {
 } from './model';
 import type { LedgerIconName } from './LedgerIcon';
 
-export type Tab = 'home' | 'activity' | 'budgets' | 'accounts' | 'categories';
+export type Tab =
+  | 'home'
+  | 'activity'
+  | 'budgets'
+  | 'accounts'
+  | 'categories'
+  | 'profile';
 export type Dialog =
   | { kind: 'transaction'; initialKind?: EntryKind }
   | { kind: 'account'; item?: Account }

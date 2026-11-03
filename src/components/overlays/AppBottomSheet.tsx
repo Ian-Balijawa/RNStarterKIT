@@ -20,6 +20,7 @@ type SheetProps = {
   snapPoints?: Array<string | number>;
   scrollable?: boolean;
   footer?: React.ReactNode;
+  headerAction?: { label: string; onPress: () => void; destructive?: boolean };
 };
 const DEFAULT_SNAP_POINTS = ['60%', '100%'];
 
@@ -32,6 +33,7 @@ export function AppBottomSheet({
   snapPoints = DEFAULT_SNAP_POINTS,
   scrollable = false,
   footer,
+  headerAction,
 }: SheetProps) {
   const ref = useRef<BottomSheetModal>(null);
   const presentedRef = useRef(false);
@@ -60,28 +62,36 @@ export function AppBottomSheet({
     ),
     [],
   );
+  const header = title ? (
+    <View style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <AppText variant="heading" style={styles.headerTitle} numberOfLines={1}>
+        {title}
+      </AppText>
+      {headerAction ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={headerAction.label}
+          onPress={headerAction.onPress}
+          hitSlop={8}
+          style={styles.closeButton}>
+          <AppText variant="label" style={{ color: headerAction.destructive ? colors.danger : colors.primary }}>
+            {headerAction.label}
+          </AppText>
+        </Pressable>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Close sheet"
+        onPress={onDismiss}
+        hitSlop={8}
+        style={styles.closeButton}>
+        <AppText variant="label" style={{ color: colors.primary }}>Close</AppText>
+      </Pressable>
+    </View>
+  ) : null;
   const content = (
     <BottomSheetInputContext.Provider value>
-      <View style={styles.content}>
-        {title ? (
-          <View style={styles.header}>
-            <AppText variant="heading" style={styles.headerTitle}>
-              {title}
-            </AppText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close sheet"
-              onPress={onDismiss}
-              hitSlop={8}
-              style={styles.closeButton}>
-              <AppText variant="label" style={{ color: colors.primary }}>
-                Close
-              </AppText>
-            </Pressable>
-          </View>
-        ) : null}
-        {children}
-      </View>
+      <View style={styles.content}>{children}</View>
     </BottomSheetInputContext.Provider>
   );
   const renderFooter = useCallback(
@@ -105,7 +115,7 @@ export function AppBottomSheet({
       topInset={insets.top}
       enableDynamicSizing={false}
       enablePanDownToClose
-      keyboardBehavior="interactive"
+      keyboardBehavior="extend"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
       onDismiss={handleDismiss}
@@ -120,14 +130,17 @@ export function AppBottomSheet({
       {scrollable ? (
         <BottomSheetScrollView
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          stickyHeaderIndices={title ? [0] : undefined}
           contentContainerStyle={[
             styles.scrollContent,
             footer ? styles.scrollWithFooter : undefined,
           ]}>
+          {header}
           {content}
         </BottomSheetScrollView>
       ) : (
-        <BottomSheetView>{content}</BottomSheetView>
+        <BottomSheetView>{header}{content}</BottomSheetView>
       )}
     </BottomSheetModal>
   );
@@ -136,12 +149,20 @@ export function AppBottomSheet({
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 24,
     gap: 16,
   },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerTitle: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerTitle: { flex: 1, minWidth: 0 },
   closeButton: { minHeight: 44, justifyContent: 'center' },
   scrollContent: { paddingBottom: 24 },
   scrollWithFooter: { paddingBottom: 152 },

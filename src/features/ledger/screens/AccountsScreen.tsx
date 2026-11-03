@@ -21,6 +21,7 @@ type Props = {
   balances: { account: Account; balance: number }[];
   totalBalance: number;
   onOpenDialog: (dialog: Dialog) => void;
+  showFloatingActions?: boolean;
 };
 
 export function AccountsScreen({
@@ -28,6 +29,7 @@ export function AccountsScreen({
   balances,
   totalBalance,
   onOpenDialog,
+  showFloatingActions = true,
 }: Props) {
   const { colors } = useAppTheme();
   return (
@@ -103,7 +105,7 @@ export function AccountsScreen({
           into any account.
         </AppText>
       </AppScreen>
-      <LedgerFloatingActions>
+      <LedgerFloatingActions visible={showFloatingActions}>
         <LedgerFloatingAction
           accessibilityLabel="Add account"
           onPress={() => onOpenDialog({ kind: 'account' })}

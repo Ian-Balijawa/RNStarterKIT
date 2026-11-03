@@ -1,5 +1,5 @@
 import {
-  accountBalance, budgetSpent, inPeriod, nextOccurrence, parseAmount, totalsFor,
+  accountBalance, budgetSpent, inPeriod, nextOccurrence, parseAmount, periodStart, totalsFor,
   type Account, type Budget, type Transaction,
 } from '../src/features/ledger/model';
 
@@ -22,6 +22,24 @@ test('budgets count only matching expenses in their period', () => {
   expect(budgetSpent(budget, entries, new Date('2026-11-15T12:00:00+03:00'))).toBe(15000);
   expect(budgetSpent(budget, entries, new Date('2026-12-01T12:00:00+03:00'))).toBe(0);
   expect(inPeriod(entries[1].occurredAt, 'weekly', new Date('2026-11-09T12:00:00+03:00'))).toBe(false);
+});
+
+test('yearly periods include the full calendar year and reset at January', () => {
+  const anchor = new Date(2026, 6, 15);
+  expect(periodStart('yearly', anchor)).toEqual(new Date(2026, 0, 1));
+  const first = new Date(2026, 0, 1, 0, 0, 0).toISOString();
+  const last = new Date(2026, 11, 31, 23, 59, 59).toISOString();
+  const next = new Date(2027, 0, 1, 0, 0, 0).toISOString();
+  expect(inPeriod(first, 'yearly', anchor)).toBe(true);
+  expect(inPeriod(last, 'yearly', anchor)).toBe(true);
+  expect(inPeriod(next, 'yearly', anchor)).toBe(false);
+  const yearlyBudget: Budget = { id: 'annual', name: 'Food', categoryId: 'food', amount: 100000, period: 'yearly' };
+  const yearlyEntries: Transaction[] = [
+    { ...entries[1], id: 'year-end', occurredAt: last },
+    { ...entries[1], id: 'next-year', occurredAt: next },
+  ];
+  expect(budgetSpent(yearlyBudget, yearlyEntries, anchor)).toBe(15000);
+  expect(totalsFor(yearlyEntries, 'yearly', anchor)).toEqual({ income: 0, expense: 15000 });
 });
 
 test('scheduled recurrence and UGX input are valid', () => {

@@ -21,9 +21,10 @@ type Props = {
   header: React.ReactNode;
   ledger: LedgerState;
   onOpenDialog: (dialog: Dialog) => void;
+  showFloatingActions?: boolean;
 };
 
-export function BudgetsScreen({ header, ledger, onOpenDialog }: Props) {
+export function BudgetsScreen({ header, ledger, onOpenDialog, showFloatingActions = true }: Props) {
   const { colors } = useAppTheme();
   return (
     <View style={styles.flex}>
@@ -76,7 +77,7 @@ export function BudgetsScreen({ header, ledger, onOpenDialog }: Props) {
           />
         )}
       </AppScreen>
-      <LedgerFloatingActions>
+      <LedgerFloatingActions visible={showFloatingActions}>
         <LedgerFloatingAction
           accessibilityLabel="Create budget"
           onPress={() => onOpenDialog({ kind: 'budget' })}

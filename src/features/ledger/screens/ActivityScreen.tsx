@@ -39,6 +39,7 @@ type Props = {
   activityKind: 'all' | EntryKind;
   onActivityKindChange: (kind: 'all' | EntryKind) => void;
   onOpenDialog: (dialog: Dialog) => void;
+  showFloatingActions?: boolean;
 };
 
 export function ActivityScreen({
@@ -53,6 +54,7 @@ export function ActivityScreen({
   activityKind,
   onActivityKindChange,
   onOpenDialog,
+  showFloatingActions = true,
 }: Props) {
   const { colors } = useAppTheme();
   return (
@@ -96,6 +98,7 @@ export function ActivityScreen({
                       { label: 'Day', value: 'daily' },
                       { label: 'Week', value: 'weekly' },
                       { label: 'Month', value: 'monthly' },
+                      { label: 'Year', value: 'yearly' },
                     ]}
                     value={period}
                     onChange={onPeriodChange}
@@ -217,7 +220,7 @@ export function ActivityScreen({
           />
         )}
       />
-      <LedgerFloatingActions>
+      <LedgerFloatingActions visible={showFloatingActions}>
         <LedgerFloatingAction
           accessibilityLabel="Add transaction"
           onPress={() => onOpenDialog({ kind: 'transaction' })}

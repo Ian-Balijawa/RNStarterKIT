@@ -22,6 +22,7 @@ type Props = {
   ledger: LedgerState;
   setLedger: React.Dispatch<React.SetStateAction<LedgerState>>;
   onClose: () => void;
+  onSheetDismissed?: () => void;
   onAddCategory: (
     name: string,
     kind: 'expense' | 'income',
@@ -37,6 +38,7 @@ export function LedgerDialog({
   ledger,
   setLedger,
   onClose,
+  onSheetDismissed,
   onAddCategory,
   onAddSubcategory,
   onSaveEntry,
@@ -88,11 +90,60 @@ export function LedgerDialog({
       : dialog?.kind === 'subcategory'
       ? 'Add subcategory'
       : null;
+  const headerAction = (() => {
+    if (dialog?.kind === 'budget' && dialog.item) {
+      const id = dialog.item.id;
+      return {
+        label: 'Delete',
+        destructive: true,
+        onPress: () => confirmDelete('Delete budget?', () => {
+          setLedger(current => ({
+            ...current,
+            budgets: current.budgets.filter(item => item.id !== id),
+          }));
+          onClose();
+        }),
+      };
+    }
+    if (dialog?.kind === 'transactionDetail') {
+      const id = dialog.item.id;
+      return {
+        label: 'Delete',
+        destructive: true,
+        onPress: () => confirmDelete('Delete transaction?', () => {
+          setLedger(current => ({
+            ...current,
+            transactions: current.transactions.filter(item => item.id !== id),
+          }));
+          onClose();
+        }),
+      };
+    }
+    if (dialog?.kind === 'scheduleDetail') {
+      const id = dialog.item.id;
+      return {
+        label: 'Delete',
+        destructive: true,
+        onPress: () => confirmDelete('Delete schedule?', () => {
+          setLedger(current => ({
+            ...current,
+            schedules: current.schedules.filter(item => item.id !== id),
+          }));
+          onClose();
+        }),
+      };
+    }
+    return undefined;
+  })();
   return (
     <AppBottomSheet
       visible={!!dialog}
-      onDismiss={onClose}
+      onDismiss={() => {
+        onClose();
+        onSheetDismissed?.();
+      }}
       title={dialogTitle}
+      headerAction={headerAction}
       scrollable
       snapPoints={['65%', '100%']}
       footer={
@@ -160,20 +211,6 @@ export function LedgerDialog({
             }));
             onClose();
           }}
-          onDelete={
-            dialog.item
-              ? () =>
-                  confirmDelete('Delete budget?', () => {
-                    setLedger(current => ({
-                      ...current,
-                      budgets: current.budgets.filter(
-                        item => item.id !== dialog.item?.id,
-                      ),
-                    }));
-                    onClose();
-                  })
-              : undefined
-          }
         />
       ) : null}
       {dialog?.kind === 'category' ? (
@@ -202,34 +239,12 @@ export function LedgerDialog({
         <TransactionDetail
           item={dialog.item}
           ledger={ledger}
-          onDelete={() =>
-            confirmDelete('Delete transaction?', () => {
-              setLedger(current => ({
-                ...current,
-                transactions: current.transactions.filter(
-                  item => item.id !== dialog.item.id,
-                ),
-              }));
-              onClose();
-            })
-          }
         />
       ) : null}
       {dialog?.kind === 'scheduleDetail' ? (
         <ScheduleDetail
           item={dialog.item}
           onRecord={() => onRecordSchedule(dialog.item)}
-          onDelete={() =>
-            confirmDelete('Delete schedule?', () => {
-              setLedger(current => ({
-                ...current,
-                schedules: current.schedules.filter(
-                  item => item.id !== dialog.item.id,
-                ),
-              }));
-              onClose();
-            })
-          }
         />
       ) : null}
     </AppBottomSheet>
