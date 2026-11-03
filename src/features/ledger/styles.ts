@@ -128,6 +128,11 @@ export const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 16 },
   activityTotals: { flexDirection: 'row', gap: 10 },
+  activityList: { gap: 0 },
+  activityHeader: { gap: 20, paddingBottom: 8 },
+  activityFilters: { gap: 12 },
+  activitySection: { gap: 12 },
+  scheduleList: { gap: 10 },
   metric: { flex: 1, minWidth: 0 },
   scheduleRow: {
     minHeight: 68,

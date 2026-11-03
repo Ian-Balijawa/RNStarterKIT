@@ -57,37 +57,41 @@ export function ActivityScreen({
           inPeriod(item.occurredAt, period, anchorDate),
       )}
       keyExtractor={item => item.id}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[styles.scrollContent, styles.activityList]}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
-        <>
+        <View style={styles.activityHeader}>
           {header}
-          <ChoiceRow
-            label="Period"
-            options={[
-              { label: 'Day', value: 'daily' },
-              { label: 'Week', value: 'weekly' },
-              { label: 'Month', value: 'monthly' },
-            ]}
-            value={period}
-            onChange={onPeriodChange}
-          />
-          <PeriodNavigator
-            period={period}
-            date={anchorDate}
-            onChange={onAnchorDateChange}
-          />
-          <ChoiceRow
-            label="Type"
-            options={[
-              { label: 'All', value: 'all' },
-              { label: 'Expenses', value: 'expense' },
-              { label: 'Income', value: 'income' },
-              { label: 'Transfers', value: 'transfer' },
-            ]}
-            value={activityKind}
-            onChange={onActivityKindChange}
-          />
+
+          <View style={styles.activityFilters}>
+            <ChoiceRow
+              label="Period"
+              options={[
+                { label: 'Day', value: 'daily' },
+                { label: 'Week', value: 'weekly' },
+                { label: 'Month', value: 'monthly' },
+              ]}
+              value={period}
+              onChange={onPeriodChange}
+            />
+            <PeriodNavigator
+              period={period}
+              date={anchorDate}
+              onChange={onAnchorDateChange}
+            />
+            <ChoiceRow
+              label="Type"
+              options={[
+                { label: 'All', value: 'all' },
+                { label: 'Expenses', value: 'expense' },
+                { label: 'Income', value: 'income' },
+                { label: 'Transfers', value: 'transfer' },
+              ]}
+              value={activityKind}
+              onChange={onActivityKindChange}
+            />
+          </View>
+
           <View style={styles.activityTotals}>
             <Surface style={styles.metric}>
               <AppText variant="caption" muted>
@@ -114,51 +118,59 @@ export function ActivityScreen({
               </AppText>
             </Surface>
           </View>
-          <SectionTitle title="Scheduled" />
-          {ledger.schedules.length ? (
-            ledger.schedules
-              .slice()
-              .sort((a, b) => a.nextAt.localeCompare(b.nextAt))
-              .map(item => {
-                const category = ledger.categories.find(
-                  value => value.id === item.categoryId,
-                )?.name;
-                return (
-                  <Pressable
-                    key={item.id}
-                    accessibilityRole="button"
-                    onPress={() =>
-                      onOpenDialog({ kind: 'scheduleDetail', item })
-                    }
-                    style={({ pressed }) => [
-                      styles.scheduleRow,
-                      {
-                        backgroundColor: colors.surface,
-                        borderColor: colors.border,
-                        opacity: pressed ? 0.7 : 1,
-                      },
-                    ]}>
-                    <LedgerIcon name="clock" color={colors.primary} />
-                    <View style={styles.flex}>
-                      <AppText variant="label">
-                        {item.note || category || 'Transfer'}
-                      </AppText>
-                      <AppText muted variant="caption">
-                        {item.recurrence} · Next {dateLabel(item.nextAt)}
-                      </AppText>
-                    </View>
-                    <AppText variant="label">{formatUGX(item.amount)}</AppText>
-                  </Pressable>
-                );
-              })
-          ) : (
-            <EmptyNote
-              title="No scheduled transactions"
-              body="Choose Scheduled when adding a transaction to plan a recurring item."
-            />
-          )}
+
+          <View style={styles.activitySection}>
+            <SectionTitle title="Scheduled" />
+            {ledger.schedules.length ? (
+              <View style={styles.scheduleList}>
+                {ledger.schedules
+                  .slice()
+                  .sort((a, b) => a.nextAt.localeCompare(b.nextAt))
+                  .map(item => {
+                    const category = ledger.categories.find(
+                      value => value.id === item.categoryId,
+                    )?.name;
+                    return (
+                      <Pressable
+                        key={item.id}
+                        accessibilityRole="button"
+                        onPress={() =>
+                          onOpenDialog({ kind: 'scheduleDetail', item })
+                        }
+                        style={({ pressed }) => [
+                          styles.scheduleRow,
+                          {
+                            backgroundColor: colors.surface,
+                            borderColor: colors.border,
+                            opacity: pressed ? 0.7 : 1,
+                          },
+                        ]}>
+                        <LedgerIcon name="clock" color={colors.primary} />
+                        <View style={styles.flex}>
+                          <AppText variant="label">
+                            {item.note || category || 'Transfer'}
+                          </AppText>
+                          <AppText muted variant="caption">
+                            {item.recurrence} · Next {dateLabel(item.nextAt)}
+                          </AppText>
+                        </View>
+                        <AppText variant="label">
+                          {formatUGX(item.amount)}
+                        </AppText>
+                      </Pressable>
+                    );
+                  })}
+              </View>
+            ) : (
+              <EmptyNote
+                title="No scheduled transactions"
+                body="Choose Scheduled when adding a transaction to plan a recurring item."
+              />
+            )}
+          </View>
+
           <SectionTitle title="Transactions" />
-        </>
+        </View>
       }
       renderItem={({ item }) => (
         <EntryRow

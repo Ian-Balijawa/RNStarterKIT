@@ -28,7 +28,7 @@ export function SubcategoryForm({
       />
       <ErrorText message={error} />
       <AppButton
-        title="Add subcategory"
+        title="Add"
         onPress={() => {
           if (!name.trim()) return setError('Enter a subcategory name.');
           if (
