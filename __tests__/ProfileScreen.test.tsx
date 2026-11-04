@@ -13,6 +13,25 @@ jest.mock('react-native-gesture-handler', () => ({
 jest.mock('@gorhom/bottom-sheet', () => ({
   BottomSheetTextInput: require('react-native').TextInput,
 }));
+jest.mock('../src/components/overlays/AppBottomSheet', () => ({
+  AppBottomSheet: ({
+    visible,
+    children,
+    footer,
+  }: {
+    visible: boolean;
+    children: React.ReactNode;
+    footer?: React.ReactNode;
+  }) =>
+    visible
+      ? require('react').createElement(
+          require('react-native').View,
+          null,
+          children,
+          footer,
+        )
+      : null,
+}));
 
 test('shows the saved name, ledger totals, account preview, and latest expense', async () => {
   const transactions: Transaction[] = [
@@ -98,11 +117,13 @@ test('shows the saved name, ledger totals, account preview, and latest expense',
   expect(output).toContain('UGX 2,300');
   expect(output).toContain('UGX 3,000');
   expect(output).toContain('UGX 700');
-  const labels = renderer.root.findAllByType(AppText).map(node =>
-    Array.isArray(node.props.children)
-      ? node.props.children.join('')
-      : node.props.children,
-  );
+  const labels = renderer.root
+    .findAllByType(AppText)
+    .map(node =>
+      Array.isArray(node.props.children)
+        ? node.props.children.join('')
+        : node.props.children,
+    );
   expect(labels).toContain('1 more account');
   expect(output).toContain('LATEST EXPENSE');
   const rows = renderer.root.findAllByType(EntryRow);

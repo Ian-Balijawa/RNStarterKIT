@@ -6,7 +6,7 @@ import {
   BottomSheetScrollView,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../theme/theme';
 import { AppText } from '../ui/AppText';
@@ -20,7 +20,6 @@ type SheetProps = {
   snapPoints?: Array<string | number>;
   scrollable?: boolean;
   footer?: React.ReactNode;
-  headerAction?: { label: string; onPress: () => void; destructive?: boolean };
 };
 const DEFAULT_SNAP_POINTS = ['60%', '100%'];
 
@@ -33,7 +32,6 @@ export function AppBottomSheet({
   snapPoints = DEFAULT_SNAP_POINTS,
   scrollable = false,
   footer,
-  headerAction,
 }: SheetProps) {
   const ref = useRef<BottomSheetModal>(null);
   const presentedRef = useRef(false);
@@ -62,33 +60,19 @@ export function AppBottomSheet({
     ),
     [],
   );
+
   const header = title ? (
-    <View style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.header,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}>
       <AppText variant="heading" style={styles.headerTitle} numberOfLines={1}>
         {title}
       </AppText>
-      {headerAction ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={headerAction.label}
-          onPress={headerAction.onPress}
-          hitSlop={8}
-          style={styles.closeButton}>
-          <AppText variant="label" style={{ color: headerAction.destructive ? colors.danger : colors.primary }}>
-            {headerAction.label}
-          </AppText>
-        </Pressable>
-      ) : null}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Close sheet"
-        onPress={onDismiss}
-        hitSlop={8}
-        style={styles.closeButton}>
-        <AppText variant="label" style={{ color: colors.primary }}>Close</AppText>
-      </Pressable>
     </View>
   ) : null;
+
   const content = (
     <BottomSheetInputContext.Provider value>
       <View style={styles.content}>{children}</View>
@@ -140,7 +124,10 @@ export function AppBottomSheet({
           {content}
         </BottomSheetScrollView>
       ) : (
-        <BottomSheetView>{header}{content}</BottomSheetView>
+        <BottomSheetView>
+          {header}
+          {content}
+        </BottomSheetView>
       )}
     </BottomSheetModal>
   );
@@ -156,14 +143,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  iconButton: {
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: { flex: 1, minWidth: 0 },
-  closeButton: { minHeight: 44, justifyContent: 'center' },
   scrollContent: { paddingBottom: 24 },
   scrollWithFooter: { paddingBottom: 152 },
   footer: {

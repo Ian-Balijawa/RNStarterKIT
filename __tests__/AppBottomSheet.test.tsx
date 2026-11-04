@@ -21,7 +21,13 @@ jest.mock('@gorhom/bottom-sheet', () => {
   const MockView = require('react-native').View;
   return {
     BottomSheetModal: ReactModule.forwardRef(
-      ({ onDismiss, children }: { onDismiss: () => void; children: React.ReactNode }, ref: React.Ref<unknown>) => {
+      (
+        {
+          onDismiss,
+          children,
+        }: { onDismiss: () => void; children: React.ReactNode },
+        ref: React.Ref<unknown>,
+      ) => {
         ReactModule.useImperativeHandle(ref, () => ({
           present: mockPresent,
           dismiss: mockDismiss,

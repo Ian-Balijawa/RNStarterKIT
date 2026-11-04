@@ -88,6 +88,7 @@ export function BudgetForm({
         value={amount}
         onChangeText={setAmount}
         keyboardType="numeric"
+        currency
         required
       />
       <LedgerChoiceField
@@ -101,8 +102,13 @@ export function BudgetForm({
         onChange={setPeriod}
       />
       <AppText muted variant="caption">
-        Spending resets each {period === 'weekly' ? 'Monday' : period === 'monthly' ? 'month' : 'year'}. Budgets
-        never change account balances.
+        Spending resets each{' '}
+        {period === 'weekly'
+          ? 'Monday'
+          : period === 'monthly'
+          ? 'month'
+          : 'year'}
+        . Budgets never change account balances.
       </AppText>
       {!submitRef ? <ErrorText message={error} /> : null}
       {!submitRef ? (

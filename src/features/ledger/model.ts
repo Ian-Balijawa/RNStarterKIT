@@ -19,6 +19,7 @@ export type Account = {
   name: string;
   type: AccountType;
   openingBalance: number;
+  archivedAt?: string;
 };
 export type Category = {
   id: string;
@@ -36,6 +37,7 @@ export type Transaction = {
   subcategory?: string;
   note: string;
   occurredAt: string;
+  archivedAt?: string;
 };
 export type Schedule = Omit<Transaction, 'occurredAt'> & {
   nextAt: string;
@@ -172,6 +174,18 @@ export function accountBalance(account: Account, transactions: Transaction[]) {
     if (item.accountId !== account.id) return balance;
     return balance + (item.kind === 'income' ? item.amount : -item.amount);
   }, account.openingBalance);
+}
+
+/** Adjusts the starting amount so the displayed balance matches what was entered now. */
+export function openingBalanceForCurrentBalance(
+  account: Account,
+  transactions: Transaction[],
+  currentBalance: number,
+) {
+  return (
+    currentBalance -
+    (accountBalance(account, transactions) - account.openingBalance)
+  );
 }
 
 export function periodStart(period: Period, date: Date): Date {

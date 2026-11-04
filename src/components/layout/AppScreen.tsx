@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -6,6 +12,7 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
+  RefreshControl,
   ScrollView,
   ScrollViewProps,
   StyleProp,
@@ -26,6 +33,8 @@ export function AppScreen({
   collapsedHeader,
   collapseThreshold = 140,
   renderScrollable,
+  onRefresh,
+  refreshing = false,
 }: {
   children?: React.ReactNode;
   scroll?: boolean;
@@ -41,7 +50,14 @@ export function AppScreen({
   renderScrollable?: (
     onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void,
   ) => React.ReactNode;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }) {
+  const sharedRefresh = useAppRefresh();
+  const refresh = onRefresh ?? sharedRefresh?.onRefresh;
+  const isRefreshing = onRefresh
+    ? refreshing
+    : sharedRefresh?.refreshing ?? false;
   const insets = useSafeAreaInsets();
   const { colors, spacing } = useAppTheme();
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -84,14 +100,23 @@ export function AppScreen({
   ) : scroll ? (
     <Animated.ScrollView
       keyboardShouldPersistTaps="handled"
-      contentInsetAdjustmentBehavior="automatic"
+      contentInsetAdjustmentBehavior="never"
+      refreshControl={
+        refresh ? (
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refresh}
+            tintColor={colors.primary}
+          />
+        ) : undefined
+      }
       onScroll={onScroll}
       scrollEventThrottle={16}
       contentContainerStyle={[
         padded && styles.padded,
         {
           paddingTop: spacing.lg,
-          paddingBottom: insets.bottom + (contentBottomPadding ?? spacing.xl),
+          paddingBottom: contentBottomPadding ?? spacing.lg,
           gap: spacing.lg,
         },
         contentContainerStyle,
@@ -105,7 +130,7 @@ export function AppScreen({
         padded && styles.padded,
         {
           paddingTop: spacing.lg,
-          paddingBottom: insets.bottom,
+          paddingBottom: spacing.lg,
         },
       ]}>
       {children}
@@ -146,25 +171,38 @@ export function AppScreen({
     </KeyboardAvoidingView>
   );
 }
+type RefreshState = { onRefresh: () => void; refreshing: boolean };
+const RefreshContext = createContext<RefreshState | null>(null);
+export function AppRefreshProvider({
+  value,
+  children,
+}: {
+  value: RefreshState;
+  children: React.ReactNode;
+}) {
+  return (
+    <RefreshContext.Provider value={value}>{children}</RefreshContext.Provider>
+  );
+}
+export function useAppRefresh() {
+  return useContext(RefreshContext);
+}
 export function AppScrollView({
   contentContainerStyle,
   ...props
 }: ScrollViewProps) {
-  const insets = useSafeAreaInsets();
   return (
     <ScrollView
       {...props}
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={[
-        { paddingBottom: insets.bottom + 24 },
-        contentContainerStyle,
-      ]}
+      contentInsetAdjustmentBehavior="never"
+      contentContainerStyle={[styles.appScrollContent, contentContainerStyle]}
     />
   );
 }
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   padded: { paddingHorizontal: space.lg },
+  appScrollContent: { paddingBottom: 16 },
   collapsedHeader: {
     position: 'absolute',
     top: 0,

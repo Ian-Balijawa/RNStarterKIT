@@ -42,3 +42,25 @@ test('API client reports HTTP errors and invokes the unauthorized callback', asy
     expect.any(Object),
   );
 });
+
+test('API client sends authenticated requests through axios', async () => {
+  const request = jest.fn(async () => ({ data: { ok: true } }));
+  const api = createApiClient({
+    baseUrl: 'https://api.example.com',
+    getToken: () => 'local-token',
+    axiosInstance: { request } as unknown as NonNullable<
+      Parameters<typeof createApiClient>[0]['axiosInstance']
+    >,
+  });
+  await expect(
+    api.request('/ledger', { method: 'POST', body: '{"value":1}' }),
+  ).resolves.toEqual({ ok: true });
+  expect(request).toHaveBeenCalledWith(
+    expect.objectContaining({
+      url: 'ledger',
+      method: 'POST',
+      data: '{"value":1}',
+      headers: expect.objectContaining({ authorization: 'Bearer local-token' }),
+    }),
+  );
+});

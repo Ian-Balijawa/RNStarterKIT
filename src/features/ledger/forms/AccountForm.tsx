@@ -11,11 +11,13 @@ import { LedgerFormHandle } from './types';
 
 export function AccountForm({
   initial,
+  currentBalance,
   onSave,
   submitRef,
   onErrorChange,
 }: {
   initial?: Account;
+  currentBalance?: number;
   onSave: (account: Account) => void;
   submitRef?: React.Ref<LedgerFormHandle>;
   onErrorChange?: (message: string) => void;
@@ -25,14 +27,14 @@ export function AccountForm({
     initial?.type ?? 'mobile_money',
   );
   const [opening, setOpening] = useState(
-    initial ? String(initial.openingBalance) : '0',
+    String(currentBalance ?? initial?.openingBalance ?? 0),
   );
   const [error, setError] = useState('');
   const submit = () => {
     const amount = Number(opening.replace(/,/g, ''));
     if (!name.trim()) return setError('Enter an account name.');
     if (!Number.isSafeInteger(amount) || amount < 0)
-      return setError('Enter a valid opening balance.');
+      return setError('Enter a valid current balance.');
     onSave({
       id: initial?.id ?? newId(),
       name: name.trim(),
@@ -67,14 +69,15 @@ export function AccountForm({
         onChange={setType}
       />
       <AppTextInput
-        label="Opening balance (UGX)"
+        label="Current balance (UGX)"
         value={opening}
         onChangeText={setOpening}
         keyboardType="numeric"
+        currency
       />
       <AppText muted variant="caption">
-        Opening balance is the amount this account held before you started
-        tracking here.
+        Enter the amount in this account now. Recorded transactions are already
+        included.
       </AppText>
       {!submitRef ? <ErrorText message={error} /> : null}
       {!submitRef ? (
