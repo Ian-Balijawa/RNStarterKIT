@@ -17,7 +17,7 @@ export function SwipeActionRow({
   onDelete,
   label,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode | ((swiping: boolean) => React.ReactNode);
   onArchive?: () => void;
   onDelete?: () => void;
   label: string;
@@ -36,18 +36,32 @@ export function SwipeActionRow({
   });
   const resting = useRef(0);
   const [open, setOpen] = useState<'archive' | 'delete' | null>(null);
+  const [swiping, setSwiping] = useState(false);
+  const swipingRef = useRef(false);
+  const markSwiping = useCallback(() => {
+    if (!swipingRef.current) {
+      swipingRef.current = true;
+      setSwiping(true);
+    }
+  }, []);
   const settle = useCallback(
     (value: number) => {
       resting.current = value;
       setOpen(value > 0 ? 'archive' : value < 0 ? 'delete' : null);
+      if (value !== 0) markSwiping();
       Animated.spring(position, {
         toValue: value,
         useNativeDriver: true,
         friction: 8,
         tension: 80,
-      }).start();
+      }).start(({ finished }) => {
+        if (finished && value === 0) {
+          swipingRef.current = false;
+          setSwiping(false);
+        }
+      });
     },
-    [position],
+    [markSwiping, position],
   );
   const pan = useMemo(
     () =>
@@ -56,6 +70,7 @@ export function SwipeActionRow({
           Math.abs(gesture.dx) > 12 &&
           Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5,
         onPanResponderMove: (_, gesture) => {
+          markSwiping();
           const next = Math.max(
             -ACTION_WIDTH,
             Math.min(ACTION_WIDTH, resting.current + gesture.dx),
@@ -68,9 +83,12 @@ export function SwipeActionRow({
         },
         onPanResponderTerminate: () => settle(resting.current),
       }),
-    [position, settle],
+    [markSwiping, position, settle],
   );
-  if (!onArchive && !onDelete) return <>{children}</>;
+  if (!onArchive && !onDelete) {
+    return <>{typeof children === 'function' ? children(false) : children}</>;
+  }
+  const content = typeof children === 'function' ? children(swiping) : children;
   return (
     <View style={styles.container} accessibilityLabel={label}>
       <Animated.View
@@ -129,7 +147,7 @@ export function SwipeActionRow({
             transform: [{ translateX: position }],
           },
         ]}>
-        {children}
+        {content}
       </Animated.View>
     </View>
   );

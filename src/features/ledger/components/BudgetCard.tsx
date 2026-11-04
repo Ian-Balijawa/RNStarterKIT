@@ -26,7 +26,7 @@ export function BudgetCard({
   const category = ledger.categories.find(
     item => item.id === budget.categoryId,
   )?.name;
-  const card = (
+  const card = (swiping: boolean) => (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${budget.name}, ${formatUGX(budget.amount)} budget`}
@@ -50,7 +50,7 @@ export function BudgetCard({
       }
       onPress={onPress}
       style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]}>
-      <Surface>
+      <Surface style={swiping ? styles.squareCorners : undefined}>
         <View style={styles.budgetTop}>
           <View style={styles.flex}>
             <AppText variant="label" style={styles.cardTitle}>
@@ -99,6 +99,6 @@ export function BudgetCard({
       {card}
     </SwipeActionRow>
   ) : (
-    card
+    card(false)
   );
 }

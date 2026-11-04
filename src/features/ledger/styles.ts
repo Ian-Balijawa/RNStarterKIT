@@ -85,6 +85,7 @@ export const styles = StyleSheet.create({
   sectionTitle: { fontSize: 19 },
   sectionAction: { minHeight: 44, justifyContent: 'center' },
   surface: { borderRadius: 20, padding: 18, borderWidth: 1, gap: 12 },
+  squareCorners: { borderRadius: 0 },
   empty: {
     minHeight: 112,
     borderWidth: 1,
@@ -115,7 +116,11 @@ export const styles = StyleSheet.create({
   spendTop: { flexDirection: 'row', justifyContent: 'space-between' },
   track: { height: 7, borderRadius: 999, overflow: 'hidden' },
   trackFill: { height: '100%', borderRadius: 999 },
-  budgetTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  budgetTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   budgetNumbers: {
     flexDirection: 'row',
     justifyContent: 'space-between',

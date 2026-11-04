@@ -78,50 +78,56 @@ export function AccountsScreen({
             onDelete={
               actions ? () => actions.deleteAccount(account) : undefined
             }>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${account.name}, ${formatUGX(balance)}`}
-              accessibilityActions={
-                actions
-                  ? [
-                      { name: 'archive', label: 'Archive' },
-                      { name: 'delete', label: 'Delete' },
-                    ]
-                  : undefined
-              }
-              onAccessibilityAction={
-                actions
-                  ? event => {
-                      if (event.nativeEvent.actionName === 'archive')
-                        actions.archiveAccount(account);
-                      if (event.nativeEvent.actionName === 'delete')
-                        actions.deleteAccount(account);
-                    }
-                  : undefined
-              }
-              onPress={() => onOpenDialog({ kind: 'account', item: account })}
-              style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
-              <Surface style={styles.accountCard}>
-                <View
-                  style={[
-                    styles.accountIcon,
-                    { backgroundColor: colors.successSurface },
-                  ]}>
-                  <LedgerIcon name="wallet" color={colors.primary} />
-                </View>
-                <View style={styles.flex}>
-                  <AppText variant="label" style={styles.cardTitle}>
-                    {account.name}
+            {swiping => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${account.name}, ${formatUGX(balance)}`}
+                accessibilityActions={
+                  actions
+                    ? [
+                        { name: 'archive', label: 'Archive' },
+                        { name: 'delete', label: 'Delete' },
+                      ]
+                    : undefined
+                }
+                onAccessibilityAction={
+                  actions
+                    ? event => {
+                        if (event.nativeEvent.actionName === 'archive')
+                          actions.archiveAccount(account);
+                        if (event.nativeEvent.actionName === 'delete')
+                          actions.deleteAccount(account);
+                      }
+                    : undefined
+                }
+                onPress={() => onOpenDialog({ kind: 'account', item: account })}
+                style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
+                <Surface
+                  style={[styles.accountCard, swiping && styles.squareCorners]}>
+                  <View
+                    style={[
+                      styles.accountIcon,
+                      { backgroundColor: colors.successSurface },
+                    ]}>
+                    <LedgerIcon name="wallet" color={colors.primary} />
+                  </View>
+                  <View style={styles.flex}>
+                    <AppText variant="label" style={styles.cardTitle}>
+                      {account.name}
+                    </AppText>
+                    <AppText muted variant="caption">
+                      {account.type.replace('_', ' ')}
+                    </AppText>
+                  </View>
+                  <AppText
+                    variant="label"
+                    numberOfLines={1}
+                    adjustsFontSizeToFit>
+                    {formatUGX(balance)}
                   </AppText>
-                  <AppText muted variant="caption">
-                    {account.type.replace('_', ' ')}
-                  </AppText>
-                </View>
-                <AppText variant="label" numberOfLines={1} adjustsFontSizeToFit>
-                  {formatUGX(balance)}
-                </AppText>
-              </Surface>
-            </Pressable>
+                </Surface>
+              </Pressable>
+            )}
           </SwipeActionRow>
         ))}
         <AppButton
