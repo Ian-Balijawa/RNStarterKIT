@@ -20,6 +20,8 @@ import { Surface } from '../components/Surface';
 import { SectionTitle } from '../components/SectionTitle';
 import { EmptyNote } from '../components/EmptyNote';
 import { EntryRow } from '../components/EntryRow';
+import { SwipeActionRow } from '../components/SwipeActionRow';
+import { useRecordActions } from '../components/RecordActions';
 import { LedgerCompactHeader } from '../components/LedgerCompactHeader';
 import {
   LedgerFloatingAction,
@@ -57,7 +59,9 @@ export function ActivityScreen({
   showFloatingActions = true,
 }: Props) {
   const { colors } = useAppTheme();
+  const actions = useRecordActions();
   const refresh = useAppRefresh();
+  const activeSchedules = ledger.schedules.filter(item => !item.archivedAt);
   return (
     <View style={styles.flex}>
       <AppScreen
@@ -161,44 +165,86 @@ export function ActivityScreen({
 
                 <View style={styles.activitySection}>
                   <SectionTitle title="Scheduled" />
-                  {ledger.schedules.length ? (
+                  {activeSchedules.length ? (
                     <View style={styles.scheduleList}>
-                      {ledger.schedules
+                      {activeSchedules
                         .slice()
                         .sort((a, b) => a.nextAt.localeCompare(b.nextAt))
                         .map(item => {
                           const category = ledger.categories.find(
                             value => value.id === item.categoryId,
                           )?.name;
+                          const label = item.note || category || 'Transfer';
                           return (
-                            <Pressable
+                            <SwipeActionRow
                               key={item.id}
-                              accessibilityRole="button"
-                              onPress={() =>
-                                onOpenDialog({ kind: 'scheduleDetail', item })
+                              label={label}
+                              onArchive={
+                                actions
+                                  ? () => actions.archiveSchedule(item)
+                                  : undefined
                               }
-                              style={({ pressed }) => [
-                                styles.scheduleRow,
-                                {
-                                  backgroundColor: colors.surface,
-                                  borderColor: colors.border,
-                                  opacity: pressed ? 0.7 : 1,
-                                },
-                              ]}>
-                              <LedgerIcon name="clock" color={colors.primary} />
-                              <View style={styles.flex}>
+                              onDelete={
+                                actions
+                                  ? () => actions.deleteSchedule(item)
+                                  : undefined
+                              }>
+                              <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={`${label}, scheduled ${
+                                  item.kind
+                                }, ${formatUGX(item.amount)}`}
+                                accessibilityActions={
+                                  actions
+                                    ? [
+                                        { name: 'archive', label: 'Archive' },
+                                        { name: 'delete', label: 'Delete' },
+                                      ]
+                                    : undefined
+                                }
+                                onAccessibilityAction={
+                                  actions
+                                    ? event => {
+                                        if (
+                                          event.nativeEvent.actionName ===
+                                          'archive'
+                                        )
+                                          actions.archiveSchedule(item);
+                                        if (
+                                          event.nativeEvent.actionName ===
+                                          'delete'
+                                        )
+                                          actions.deleteSchedule(item);
+                                      }
+                                    : undefined
+                                }
+                                onPress={() =>
+                                  onOpenDialog({ kind: 'scheduleDetail', item })
+                                }
+                                style={({ pressed }) => [
+                                  styles.scheduleRow,
+                                  {
+                                    backgroundColor: colors.surface,
+                                    borderColor: colors.border,
+                                    opacity: pressed ? 0.7 : 1,
+                                  },
+                                ]}>
+                                <LedgerIcon
+                                  name="clock"
+                                  color={colors.primary}
+                                />
+                                <View style={styles.flex}>
+                                  <AppText variant="label">{label}</AppText>
+                                  <AppText muted variant="caption">
+                                    {item.recurrence} · Next{' '}
+                                    {dateLabel(item.nextAt)}
+                                  </AppText>
+                                </View>
                                 <AppText variant="label">
-                                  {item.note || category || 'Transfer'}
+                                  {formatUGX(item.amount)}
                                 </AppText>
-                                <AppText muted variant="caption">
-                                  {item.recurrence} · Next{' '}
-                                  {dateLabel(item.nextAt)}
-                                </AppText>
-                              </View>
-                              <AppText variant="label">
-                                {formatUGX(item.amount)}
-                              </AppText>
-                            </Pressable>
+                              </Pressable>
+                            </SwipeActionRow>
                           );
                         })}
                     </View>

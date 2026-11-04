@@ -3,7 +3,6 @@ import ReactTestRenderer from 'react-test-renderer';
 import { TextInput } from 'react-native';
 import { AppThemeProvider } from '../src/theme/theme';
 import { AppButton } from '../src/components/ui/AppButton';
-import { AppDialog } from '../src/components/overlays/AppDialog';
 import { AppText } from '../src/components/ui/AppText';
 import { LedgerDialog } from '../src/features/ledger/components/LedgerDialog';
 import { INITIAL_LEDGER } from '../src/features/ledger/model';
@@ -80,7 +79,7 @@ test('category form submits from its floating sheet action and shows validation 
   expect(onClose).toHaveBeenCalledTimes(1);
 });
 
-test('scheduled entry can be deleted through a custom confirmation', async () => {
+test('scheduled entry detail has no delete button', async () => {
   const schedule = {
     id: 'rent-reminder',
     kind: 'expense' as const,
@@ -91,8 +90,6 @@ test('scheduled entry can be deleted through a custom confirmation', async () =>
     recurrence: 'monthly' as const,
   };
   const ledger = { ...INITIAL_LEDGER, schedules: [schedule] };
-  const setLedger = jest.fn();
-  const onClose = jest.fn();
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(() => {
     renderer = ReactTestRenderer.create(
@@ -100,8 +97,8 @@ test('scheduled entry can be deleted through a custom confirmation', async () =>
         <LedgerDialog
           dialog={{ kind: 'scheduleDetail', item: schedule }}
           ledger={ledger}
-          setLedger={setLedger}
-          onClose={onClose}
+          setLedger={jest.fn()}
+          onClose={jest.fn()}
           onAddCategory={jest.fn()}
           onAddSubcategory={jest.fn()}
           onSaveEntry={jest.fn()}
@@ -111,14 +108,10 @@ test('scheduled entry can be deleted through a custom confirmation', async () =>
     );
   });
 
-  const deleteButton = renderer.root
-    .findAllByType(AppButton)
-    .find(button => button.props.title === 'Delete schedule')!;
-  await ReactTestRenderer.act(() => deleteButton.props.onPress());
-  const confirmation = renderer.root.findByType(AppDialog);
-  expect(confirmation.props.visible).toBe(true);
-  await ReactTestRenderer.act(() => confirmation.props.onConfirm());
-  expect(setLedger).toHaveBeenCalledTimes(1);
-  expect(setLedger.mock.calls[0][0](ledger).schedules).toEqual([]);
-  expect(onClose).toHaveBeenCalledTimes(1);
+  expect(
+    renderer.root.findAllByType(AppButton).map(button => button.props.title),
+  ).toContain('Record this transaction now');
+  expect(
+    renderer.root.findAllByType(AppButton).map(button => button.props.title),
+  ).not.toContain('Delete schedule');
 });

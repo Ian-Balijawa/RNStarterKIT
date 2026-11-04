@@ -3,7 +3,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppScreen } from '../../../components/layout/AppScreen';
 import { AppTextInput } from '../../../components/forms/AppTextInput';
-import { AppBottomSheet } from '../../../components/overlays/AppBottomSheet';
+import {
+  AppBottomSheet,
+  DEFAULT_SNAP_POINTS,
+} from '../../../components/overlays/AppBottomSheet';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppText } from '../../../components/ui/AppText';
 import { useAppTheme } from '../../../theme/theme';
@@ -347,7 +350,9 @@ export function ProfileScreen({
           )}
         </View>
         {ledger.accounts.some(item => item.archivedAt) ||
-        ledger.transactions.some(item => item.archivedAt) ? (
+        ledger.transactions.some(item => item.archivedAt) ||
+        ledger.schedules.some(item => item.archivedAt) ||
+        ledger.budgets.some(item => item.archivedAt) ? (
           <View style={styles.section}>
             <SectionTitle title="Archived records" />
             <Surface>
@@ -389,6 +394,44 @@ export function ProfileScreen({
                     />
                   </View>
                 ))}
+              {ledger.schedules
+                .filter(item => item.archivedAt)
+                .map(item => (
+                  <View key={item.id} style={styles.archiveRow}>
+                    <View style={styles.accountName}>
+                      <AppText variant="label" numberOfLines={1}>
+                        {item.note || item.kind}
+                      </AppText>
+                      <AppText variant="caption" muted>
+                        {formatUGX(item.amount)} · Schedule
+                      </AppText>
+                    </View>
+                    <AppButton
+                      title="Restore"
+                      variant="ghost"
+                      onPress={() => recordActions?.restoreSchedule(item)}
+                    />
+                  </View>
+                ))}
+              {ledger.budgets
+                .filter(item => item.archivedAt)
+                .map(item => (
+                  <View key={item.id} style={styles.archiveRow}>
+                    <View style={styles.accountName}>
+                      <AppText variant="label" numberOfLines={1}>
+                        {item.name}
+                      </AppText>
+                      <AppText variant="caption" muted>
+                        {formatUGX(item.amount)} · Budget
+                      </AppText>
+                    </View>
+                    <AppButton
+                      title="Restore"
+                      variant="ghost"
+                      onPress={() => recordActions?.restoreBudget(item)}
+                    />
+                  </View>
+                ))}
             </Surface>
           </View>
         ) : null}
@@ -397,7 +440,8 @@ export function ProfileScreen({
         visible={editOpen}
         onDismiss={() => setEditOpen(false)}
         title={profile ? 'Edit profile' : 'Create profile'}
-        snapPoints={['55%', '85%']}
+        // snapPoints={['55%', '85%']}
+        snapPoints={DEFAULT_SNAP_POINTS}
         scrollable
         footer={
           <AppButton

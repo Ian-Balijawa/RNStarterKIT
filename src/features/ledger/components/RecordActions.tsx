@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { Account, Transaction } from '../model';
+import { Account, Budget, Schedule, Transaction } from '../model';
 
 export type RecordActions = {
   archiveAccount: (account: Account) => void;
@@ -8,6 +8,12 @@ export type RecordActions = {
   archiveTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transaction: Transaction) => void;
   restoreTransaction: (transaction: Transaction) => void;
+  archiveSchedule: (schedule: Schedule) => void;
+  deleteSchedule: (schedule: Schedule) => void;
+  restoreSchedule: (schedule: Schedule) => void;
+  archiveBudget: (budget: Budget) => void;
+  deleteBudget: (budget: Budget) => void;
+  restoreBudget: (budget: Budget) => void;
 };
 const Context = createContext<RecordActions | null>(null);
 export function RecordActionsProvider({

@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AppBottomSheet } from '../../../components/overlays/AppBottomSheet';
-import { AppDialog } from '../../../components/overlays/AppDialog';
+import {
+  AppBottomSheet,
+  DEFAULT_SNAP_POINTS,
+} from '../../../components/overlays/AppBottomSheet';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppText } from '../../../components/ui/AppText';
 import { useAppTheme } from '../../../theme/theme';
@@ -55,10 +57,6 @@ export function LedgerDialog({
   const [transactionActionTitle, setTransactionActionTitle] =
     useState('Save expense');
   const [formError, setFormError] = useState('');
-  const [deleteRequest, setDeleteRequest] = useState<{
-    title: string;
-    onConfirm: () => void;
-  } | null>(null);
   const { colors } = useAppTheme();
   useEffect(() => setFormError(''), [dialog]);
   const dialogTitle =
@@ -95,202 +93,134 @@ export function LedgerDialog({
       : dialog?.kind === 'subcategory'
       ? 'Add subcategory'
       : null;
-  const deleteAction = (() => {
-    if (dialog?.kind === 'budget' && dialog.item) {
-      const id = dialog.item.id;
-      return {
-        title: 'Delete budget',
-        prompt: 'Delete budget?',
-        onConfirm: () =>
-          setLedger(current => ({
-            ...current,
-            budgets: current.budgets.filter(item => item.id !== id),
-          })),
-      };
-    }
-    if (dialog?.kind === 'transactionDetail') {
-      const id = dialog.item.id;
-      return {
-        title: 'Delete transaction',
-        prompt: 'Delete transaction?',
-        onConfirm: () =>
-          setLedger(current => ({
-            ...current,
-            transactions: current.transactions.filter(item => item.id !== id),
-          })),
-      };
-    }
-    if (dialog?.kind === 'scheduleDetail') {
-      const id = dialog.item.id;
-      return {
-        title: 'Delete schedule',
-        prompt: 'Delete schedule?',
-        onConfirm: () =>
-          setLedger(current => ({
-            ...current,
-            schedules: current.schedules.filter(item => item.id !== id),
-          })),
-      };
-    }
-    return null;
-  })();
 
   return (
-    <>
-      <AppBottomSheet
-        visible={!!dialog}
-        onDismiss={() => {
-          onClose();
-          onSheetDismissed?.();
-        }}
-        title={dialogTitle}
-        scrollable
-        snapPoints={['65%', '100%']}
-        footer={
-          actionTitle || deleteAction ? (
-            <View style={footerStyles.content}>
-              {formError ? (
-                <AppText
-                  variant="caption"
-                  accessibilityLiveRegion="polite"
-                  style={{ color: colors.danger }}>
-                  {formError}
-                </AppText>
-              ) : null}
-              <View style={footerStyles.actions}>
-                {deleteAction ? (
-                  <AppButton
-                    title={deleteAction.title}
-                    variant="danger"
-                    style={footerStyles.action}
-                    onPress={() =>
-                      setDeleteRequest({
-                        title: deleteAction.prompt,
-                        onConfirm: deleteAction.onConfirm,
-                      })
-                    }
-                  />
-                ) : null}
-                {actionTitle ? (
-                  <AppButton
-                    title={actionTitle}
-                    style={footerStyles.action}
-                    onPress={() => formRef.current?.submit()}
-                  />
-                ) : null}
-              </View>
+    <AppBottomSheet
+      visible={!!dialog}
+      onDismiss={() => {
+        onClose();
+        onSheetDismissed?.();
+      }}
+      title={dialogTitle}
+      scrollable
+      // snapPoints={['65%', '100%']}
+      snapPoints={DEFAULT_SNAP_POINTS}
+      footer={
+        actionTitle ? (
+          <View style={footerStyles.content}>
+            {formError ? (
+              <AppText
+                variant="caption"
+                accessibilityLiveRegion="polite"
+                style={{ color: colors.danger }}>
+                {formError}
+              </AppText>
+            ) : null}
+            <View style={footerStyles.actions}>
+              <AppButton
+                title={actionTitle}
+                style={footerStyles.action}
+                onPress={() => formRef.current?.submit()}
+              />
             </View>
-          ) : undefined
-        }>
-        {dialog?.kind === 'transaction' ? (
-          <TransactionForm
-            ledger={ledger}
-            initialKind={dialog.initialKind}
-            onSave={onSaveEntry}
-            onAddCategory={(name, kind) => onAddCategory(name, kind)}
-            onAddSubcategory={onAddSubcategory}
-            submitRef={formRef}
-            onActionTitleChange={setTransactionActionTitle}
-            onErrorChange={setFormError}
-          />
-        ) : null}
-        {dialog?.kind === 'account' ? (
-          <AccountForm
-            initial={dialog.item}
-            currentBalance={
-              dialog.item
-                ? accountBalance(dialog.item, ledger.transactions)
-                : undefined
-            }
-            submitRef={formRef}
-            onErrorChange={setFormError}
-            onSave={account => {
-              setLedger(current => ({
-                ...current,
-                accounts: current.accounts.some(item => item.id === account.id)
-                  ? current.accounts.map(item =>
-                      item.id === account.id
-                        ? {
-                            ...account,
-                            openingBalance: openingBalanceForCurrentBalance(
-                              item,
-                              current.transactions,
-                              account.openingBalance,
-                            ),
-                          }
-                        : item,
-                    )
-                  : [...current.accounts, account],
-              }));
-              onClose();
-            }}
-          />
-        ) : null}
-        {dialog?.kind === 'budget' ? (
-          <BudgetForm
-            ledger={ledger}
-            initial={dialog.item}
-            submitRef={formRef}
-            onErrorChange={setFormError}
-            onSave={budget => {
-              setLedger(current => ({
-                ...current,
-                budgets: current.budgets.some(item => item.id === budget.id)
-                  ? current.budgets.map(item =>
-                      item.id === budget.id ? budget : item,
-                    )
-                  : [...current.budgets, budget],
-              }));
-              onClose();
-            }}
-          />
-        ) : null}
-        {dialog?.kind === 'category' ? (
-          <CategoryForm
-            existing={ledger.categories}
-            submitRef={formRef}
-            onErrorChange={setFormError}
-            onSave={(name, kind, subs) => {
-              onAddCategory(name, kind, subs);
-              onClose();
-            }}
-          />
-        ) : null}
-        {dialog?.kind === 'subcategory' ? (
-          <SubcategoryForm
-            category={dialog.item}
-            submitRef={formRef}
-            onErrorChange={setFormError}
-            onSave={name => {
-              onAddSubcategory(dialog.item.id, name);
-              onClose();
-            }}
-          />
-        ) : null}
-        {dialog?.kind === 'transactionDetail' ? (
-          <TransactionDetail item={dialog.item} ledger={ledger} />
-        ) : null}
-        {dialog?.kind === 'scheduleDetail' ? (
-          <ScheduleDetail
-            item={dialog.item}
-            onRecord={() => onRecordSchedule(dialog.item)}
-          />
-        ) : null}
-      </AppBottomSheet>
-      <AppDialog
-        visible={!!deleteRequest}
-        title={deleteRequest?.title ?? ''}
-        message="This action cannot be undone."
-        confirmLabel="Delete"
-        destructive
-        onCancel={() => setDeleteRequest(null)}
-        onConfirm={() => {
-          deleteRequest?.onConfirm();
-          setDeleteRequest(null);
-          onClose();
-        }}
-      />
-    </>
+          </View>
+        ) : undefined
+      }>
+      {dialog?.kind === 'transaction' ? (
+        <TransactionForm
+          ledger={ledger}
+          initialKind={dialog.initialKind}
+          onSave={onSaveEntry}
+          onAddCategory={(name, kind) => onAddCategory(name, kind)}
+          onAddSubcategory={onAddSubcategory}
+          submitRef={formRef}
+          onActionTitleChange={setTransactionActionTitle}
+          onErrorChange={setFormError}
+        />
+      ) : null}
+      {dialog?.kind === 'account' ? (
+        <AccountForm
+          initial={dialog.item}
+          currentBalance={
+            dialog.item
+              ? accountBalance(dialog.item, ledger.transactions)
+              : undefined
+          }
+          submitRef={formRef}
+          onErrorChange={setFormError}
+          onSave={account => {
+            setLedger(current => ({
+              ...current,
+              accounts: current.accounts.some(item => item.id === account.id)
+                ? current.accounts.map(item =>
+                    item.id === account.id
+                      ? {
+                          ...account,
+                          openingBalance: openingBalanceForCurrentBalance(
+                            item,
+                            current.transactions,
+                            account.openingBalance,
+                          ),
+                        }
+                      : item,
+                  )
+                : [...current.accounts, account],
+            }));
+            onClose();
+          }}
+        />
+      ) : null}
+      {dialog?.kind === 'budget' ? (
+        <BudgetForm
+          ledger={ledger}
+          initial={dialog.item}
+          submitRef={formRef}
+          onErrorChange={setFormError}
+          onSave={budget => {
+            setLedger(current => ({
+              ...current,
+              budgets: current.budgets.some(item => item.id === budget.id)
+                ? current.budgets.map(item =>
+                    item.id === budget.id ? budget : item,
+                  )
+                : [...current.budgets, budget],
+            }));
+            onClose();
+          }}
+        />
+      ) : null}
+      {dialog?.kind === 'category' ? (
+        <CategoryForm
+          existing={ledger.categories}
+          submitRef={formRef}
+          onErrorChange={setFormError}
+          onSave={(name, kind, subs) => {
+            onAddCategory(name, kind, subs);
+            onClose();
+          }}
+        />
+      ) : null}
+      {dialog?.kind === 'subcategory' ? (
+        <SubcategoryForm
+          category={dialog.item}
+          submitRef={formRef}
+          onErrorChange={setFormError}
+          onSave={name => {
+            onAddSubcategory(dialog.item.id, name);
+            onClose();
+          }}
+        />
+      ) : null}
+      {dialog?.kind === 'transactionDetail' ? (
+        <TransactionDetail item={dialog.item} ledger={ledger} />
+      ) : null}
+      {dialog?.kind === 'scheduleDetail' ? (
+        <ScheduleDetail
+          item={dialog.item}
+          onRecord={() => onRecordSchedule(dialog.item)}
+        />
+      ) : null}
+    </AppBottomSheet>
   );
 }
 

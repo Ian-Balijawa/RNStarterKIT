@@ -26,6 +26,7 @@ type Props = {
 
 export function BudgetsScreen({ header, ledger, onOpenDialog, showFloatingActions = true }: Props) {
   const { colors } = useAppTheme();
+  const activeBudgets = ledger.budgets.filter(item => !item.archivedAt);
   return (
     <View style={styles.flex}>
       <AppScreen
@@ -40,8 +41,8 @@ export function BudgetsScreen({ header, ledger, onOpenDialog, showFloatingAction
         collapsedHeader={
           <LedgerCompactHeader
             title="Budgets"
-            summary={`${ledger.budgets.length} ${
-              ledger.budgets.length === 1 ? 'budget' : 'budgets'
+            summary={`${activeBudgets.length} ${
+              activeBudgets.length === 1 ? 'budget' : 'budgets'
             }`}
           />
         }>
@@ -61,8 +62,8 @@ export function BudgetsScreen({ header, ledger, onOpenDialog, showFloatingAction
           </AppText>
         </Surface>
         <SectionTitle title="Your budgets" />
-        {ledger.budgets.length ? (
-          ledger.budgets.map(item => (
+        {activeBudgets.length ? (
+          activeBudgets.map(item => (
             <BudgetCard
               key={item.id}
               budget={item}

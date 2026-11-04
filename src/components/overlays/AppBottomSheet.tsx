@@ -21,7 +21,7 @@ type SheetProps = {
   scrollable?: boolean;
   footer?: React.ReactNode;
 };
-const DEFAULT_SNAP_POINTS = ['60%', '100%'];
+export const DEFAULT_SNAP_POINTS = ['40%', '45%', '60%', '100%'];
 
 /** A controlled modal sheet. Mount this inside BottomSheetModalProvider. */
 export function AppBottomSheet({

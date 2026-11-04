@@ -197,8 +197,9 @@ export function OverviewScreen({
           action="Manage"
           onPress={() => onSelectTab('budgets')}
         />
-        {ledger.budgets.length ? (
+        {ledger.budgets.some(item => !item.archivedAt) ? (
           ledger.budgets
+            .filter(item => !item.archivedAt)
             .slice(0, 2)
             .map(item => (
               <BudgetCard

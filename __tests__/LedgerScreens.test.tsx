@@ -3,6 +3,8 @@ import ReactTestRenderer from 'react-test-renderer';
 import { AppSelect } from '../src/components/forms/AppSelect';
 import { AppText } from '../src/components/ui/AppText';
 import { LedgerFloatingAction } from '../src/features/ledger/components/LedgerFloatingActions';
+import { RecordActionsProvider } from '../src/features/ledger/components/RecordActions';
+import { SwipeActionRow } from '../src/features/ledger/components/SwipeActionRow';
 import { INITIAL_LEDGER } from '../src/features/ledger/model';
 import { AccountsScreen } from '../src/features/ledger/screens/AccountsScreen';
 import { ActivityScreen } from '../src/features/ledger/screens/ActivityScreen';
@@ -131,4 +133,93 @@ test('activity, accounts, and budgets open their create sheets from floating act
   expect(onOpenDialog).toHaveBeenCalledWith({ kind: 'transaction' });
   expect(onOpenDialog).toHaveBeenCalledWith({ kind: 'account' });
   expect(onOpenDialog).toHaveBeenCalledWith({ kind: 'budget' });
+});
+
+test('scheduled entries and budgets expose swipe archive and delete actions', async () => {
+  const schedule = {
+    id: 'rent-reminder',
+    kind: 'expense' as const,
+    amount: 100000,
+    accountId: 'cash',
+    note: 'Rent',
+    nextAt: '2027-01-01T09:00:00.000Z',
+    recurrence: 'monthly' as const,
+  };
+  const budget = {
+    id: 'food-budget',
+    name: 'Food',
+    categoryId: 'food',
+    amount: 200000,
+    period: 'monthly' as const,
+  };
+  const ledger = {
+    ...INITIAL_LEDGER,
+    schedules: [schedule],
+    budgets: [budget],
+  };
+  const archiveSchedule = jest.fn();
+  const deleteSchedule = jest.fn();
+  const archiveBudget = jest.fn();
+  const deleteBudget = jest.fn();
+  const actions = {
+    archiveAccount: jest.fn(),
+    deleteAccount: jest.fn(),
+    restoreAccount: jest.fn(),
+    archiveTransaction: jest.fn(),
+    deleteTransaction: jest.fn(),
+    restoreTransaction: jest.fn(),
+    archiveSchedule,
+    deleteSchedule,
+    restoreSchedule: jest.fn(),
+    archiveBudget,
+    deleteBudget,
+    restoreBudget: jest.fn(),
+  };
+  let activity!: ReactTestRenderer.ReactTestRenderer;
+  let budgets!: ReactTestRenderer.ReactTestRenderer;
+  await ReactTestRenderer.act(() => {
+    activity = ReactTestRenderer.create(
+      <AppThemeProvider>
+        <RecordActionsProvider value={actions}>
+          <ActivityScreen
+            header={<AppText>Activity</AppText>}
+            ledger={ledger}
+            recent={[]}
+            totals={{ income: 0, expense: 0 }}
+            period="monthly"
+            onPeriodChange={jest.fn()}
+            anchorDate={new Date()}
+            onAnchorDateChange={jest.fn()}
+            activityKind="all"
+            onActivityKindChange={jest.fn()}
+            onOpenDialog={jest.fn()}
+          />
+        </RecordActionsProvider>
+      </AppThemeProvider>,
+    );
+    budgets = ReactTestRenderer.create(
+      <AppThemeProvider>
+        <RecordActionsProvider value={actions}>
+          <BudgetsScreen
+            header={<AppText>Budgets</AppText>}
+            ledger={ledger}
+            onOpenDialog={jest.fn()}
+          />
+        </RecordActionsProvider>
+      </AppThemeProvider>,
+    );
+  });
+
+  const scheduleRow = activity.root.findByType(SwipeActionRow);
+  const budgetRow = budgets.root.findByType(SwipeActionRow);
+  await ReactTestRenderer.act(() => {
+    scheduleRow.props.onArchive();
+    scheduleRow.props.onDelete();
+    budgetRow.props.onArchive();
+    budgetRow.props.onDelete();
+  });
+  expect(archiveSchedule).toHaveBeenCalledWith(schedule);
+  expect(deleteSchedule).toHaveBeenCalledWith(schedule);
+  expect(archiveBudget).toHaveBeenCalledWith(budget);
+  expect(deleteBudget).toHaveBeenCalledWith(budget);
 });

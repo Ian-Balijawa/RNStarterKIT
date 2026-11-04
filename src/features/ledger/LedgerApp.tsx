@@ -64,7 +64,7 @@ export function LedgerApp() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [activeTick, setActiveTick] = useState(0);
   const previousScheduleIds = useRef(
-    new Set(ledger.schedules.map(item => item.id)),
+    new Set(ledger.schedules.filter(item => !item.archivedAt).map(item => item.id)),
   );
   useEffect(() => {
     const subscription = AppState.addEventListener('change', state => {
@@ -76,6 +76,7 @@ export function LedgerApp() {
   const [previousTab, setPreviousTab] = useState<Tab>('home');
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [sheetPresented, setSheetPresented] = useState(false);
+  const showFloatingActions = !dialog && !sheetPresented && !notificationOpen;
   useEffect(() => {
     if (dialog) setSheetPresented(true);
   }, [dialog]);
@@ -125,12 +126,13 @@ export function LedgerApp() {
     inPeriod(item.occurredAt, period, anchorDate),
   );
   useEffect(() => {
-    const currentIds = new Set(ledger.schedules.map(item => item.id));
+    const activeSchedules = ledger.schedules.filter(item => !item.archivedAt);
+    const currentIds = new Set(activeSchedules.map(item => item.id));
     previousScheduleIds.current.forEach(id => {
       if (!currentIds.has(id)) cancelDeviceReminder(id).catch(() => {});
     });
     previousScheduleIds.current = currentIds;
-    const due = ledger.schedules.filter(
+    const due = activeSchedules.filter(
       item => new Date(item.nextAt).getTime() <= Date.now(),
     );
     if (due.length)
@@ -153,7 +155,7 @@ export function LedgerApp() {
           ? [...additions, ...current].slice(0, 200)
           : current;
       });
-    ledger.schedules.forEach(item => {
+    activeSchedules.forEach(item => {
       scheduleDeviceReminder(item).catch(() => {});
     });
   }, [activeTick, ledger.schedules, setNotices]);
@@ -196,6 +198,62 @@ export function LedgerApp() {
             : item,
         ),
       })),
+    archiveSchedule: schedule =>
+      setLedger(current => ({
+        ...current,
+        schedules: current.schedules.map(item =>
+          item.id === schedule.id
+            ? { ...item, archivedAt: new Date().toISOString() }
+            : item,
+        ),
+      })),
+    restoreSchedule: schedule =>
+      setLedger(current => ({
+        ...current,
+        schedules: current.schedules.map(item =>
+          item.id === schedule.id ? { ...item, archivedAt: undefined } : item,
+        ),
+      })),
+    deleteSchedule: schedule =>
+      setConfirmation({
+        title: 'Delete schedule?',
+        message: 'This scheduled entry will be removed. It cannot be undone.',
+        confirmLabel: 'Delete',
+        destructive: true,
+        onConfirm: () =>
+          setLedger(current => ({
+            ...current,
+            schedules: current.schedules.filter(item => item.id !== schedule.id),
+          })),
+      }),
+    archiveBudget: budget =>
+      setLedger(current => ({
+        ...current,
+        budgets: current.budgets.map(item =>
+          item.id === budget.id
+            ? { ...item, archivedAt: new Date().toISOString() }
+            : item,
+        ),
+      })),
+    restoreBudget: budget =>
+      setLedger(current => ({
+        ...current,
+        budgets: current.budgets.map(item =>
+          item.id === budget.id ? { ...item, archivedAt: undefined } : item,
+        ),
+      })),
+    deleteBudget: budget =>
+      setConfirmation({
+        title: 'Delete budget?',
+        message: 'This budget will be removed. It cannot be undone.',
+        confirmLabel: 'Delete',
+        destructive: true,
+        onConfirm: () =>
+          setLedger(current => ({
+            ...current,
+            budgets: current.budgets.filter(item => item.id !== budget.id),
+          })),
+      }),
     deleteAccount: account => {
       const linked =
         ledger.transactions.some(
@@ -310,7 +368,7 @@ export function LedgerApp() {
       );
       if (transaction.kind === 'expense') {
         const date = new Date(transaction.occurredAt);
-        ledger.budgets.forEach(budget => {
+        ledger.budgets.filter(budget => !budget.archivedAt).forEach(budget => {
           const before = budgetSpent(budget, ledger.transactions, date);
           const after = budgetSpent(
             budget,
@@ -391,7 +449,7 @@ export function LedgerApp() {
                 onAnchorDateChange={setAnchorDate}
                 onSelectTab={setTab}
                 onOpenDialog={setDialog}
-                showFloatingActions={!dialog && !sheetPresented}
+                showFloatingActions={showFloatingActions}
               />
             ) : tab === 'activity' ? (
               <ActivityScreen
@@ -406,14 +464,14 @@ export function LedgerApp() {
                 activityKind={activityKind}
                 onActivityKindChange={setActivityKind}
                 onOpenDialog={setDialog}
-                showFloatingActions={!dialog && !sheetPresented}
+                showFloatingActions={showFloatingActions}
               />
             ) : tab === 'budgets' ? (
               <BudgetsScreen
                 header={header}
                 ledger={ledger}
                 onOpenDialog={setDialog}
-                showFloatingActions={!dialog && !sheetPresented}
+                showFloatingActions={showFloatingActions}
               />
             ) : tab === 'accounts' ? (
               <AccountsScreen
@@ -421,7 +479,7 @@ export function LedgerApp() {
                 balances={balances}
                 totalBalance={totalBalance}
                 onOpenDialog={setDialog}
-                showFloatingActions={!dialog && !sheetPresented}
+                showFloatingActions={showFloatingActions}
               />
             ) : tab === 'profile' ? (
               <ProfileScreen
@@ -443,7 +501,7 @@ export function LedgerApp() {
                 header={header}
                 ledger={ledger}
                 onOpenDialog={setDialog}
-                showFloatingActions={!dialog && !sheetPresented}
+                showFloatingActions={showFloatingActions}
               />
             )}
           </View>
@@ -490,7 +548,7 @@ export function LedgerApp() {
           )
         }
         onEnabled={() =>
-          ledger.schedules.forEach(item => {
+          ledger.schedules.filter(item => !item.archivedAt).forEach(item => {
             scheduleDeviceReminder(item).catch(() => {});
           })
         }

@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { AppBottomSheet } from '../../../components/overlays/AppBottomSheet';
+import {
+  AppBottomSheet,
+  DEFAULT_SNAP_POINTS,
+} from '../../../components/overlays/AppBottomSheet';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppText } from '../../../components/ui/AppText';
 import { useAppTheme } from '../../../theme/theme';
@@ -39,7 +42,8 @@ export function NotificationSheet({
       onDismiss={onClose}
       title="Notifications"
       scrollable
-      snapPoints={['60%', '90%']}>
+      // snapPoints={['60%', '90%']}
+      snapPoints={DEFAULT_SNAP_POINTS}>
       {!deviceEnabled ? (
         <View
           style={[

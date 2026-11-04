@@ -50,6 +50,7 @@ export type Budget = {
   subcategory?: string;
   amount: number;
   period: 'weekly' | 'monthly' | 'yearly';
+  archivedAt?: string;
 };
 export type LedgerState = {
   accounts: Account[];

@@ -29,6 +29,12 @@ test('transaction swipe actions also have accessible archive and delete commands
             archiveTransaction,
             deleteTransaction,
             restoreTransaction: jest.fn(),
+            archiveSchedule: jest.fn(),
+            deleteSchedule: jest.fn(),
+            restoreSchedule: jest.fn(),
+            archiveBudget: jest.fn(),
+            deleteBudget: jest.fn(),
+            restoreBudget: jest.fn(),
           }}>
           <EntryRow item={item} ledger={INITIAL_LEDGER} onPress={jest.fn()} />
         </RecordActionsProvider>
