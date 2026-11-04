@@ -98,11 +98,13 @@ test('shows the saved name, ledger totals, account preview, and latest expense',
   expect(output).toContain('UGX 2,300');
   expect(output).toContain('UGX 3,000');
   expect(output).toContain('UGX 700');
-  const labels = renderer.root.findAllByType(AppText).map(node =>
-    Array.isArray(node.props.children)
-      ? node.props.children.join('')
-      : node.props.children,
-  );
+  const labels = renderer.root
+    .findAllByType(AppText)
+    .map(node =>
+      Array.isArray(node.props.children)
+        ? node.props.children.join('')
+        : node.props.children,
+    );
   expect(labels).toContain('1 more account');
   expect(output).toContain('LATEST EXPENSE');
   const rows = renderer.root.findAllByType(EntryRow);

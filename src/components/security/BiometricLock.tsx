@@ -81,6 +81,21 @@ type Props = {
   lockAfterMs?: number;
 };
 
+type LockProps = Props & {
+  /**
+   * The lock is skipped in development builds (__DEV__).
+   * Set this to true to preview the lock screen while developing.
+   */
+  enabledInDev?: boolean;
+};
+
+export function BiometricLock({ enabledInDev = false, ...props }: LockProps) {
+  if (__DEV__ && !enabledInDev) {
+    return <>{props.children}</>;
+  }
+  return <BiometricGate {...props} />;
+}
+
 const FEATURES: { icon: IconName; title: string; body: string }[] = [
   {
     icon: 'receipt',
@@ -99,7 +114,7 @@ const FEATURES: { icon: IconName; title: string; body: string }[] = [
   },
 ];
 
-export function BiometricLock({ children, userName, lockAfterMs = 0 }: Props) {
+function BiometricGate({ children, userName, lockAfterMs = 0 }: Props) {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const [unlocked, setUnlocked] = useState(false);
@@ -358,7 +373,7 @@ const styles = StyleSheet.create({
   landing: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
   },
   content: {
     width: '100%',
