@@ -24,6 +24,16 @@ export function SwipeActionRow({
 }) {
   const { colors } = useAppTheme();
   const position = useRef(new Animated.Value(0)).current;
+  const archiveOpacity = position.interpolate({
+    inputRange: [0, 8],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+  const deleteOpacity = position.interpolate({
+    inputRange: [-8, 0],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
   const resting = useRef(0);
   const [open, setOpen] = useState<'archive' | 'delete' | null>(null);
   const settle = useCallback(
@@ -63,61 +73,78 @@ export function SwipeActionRow({
   if (!onArchive && !onDelete) return <>{children}</>;
   return (
     <View style={styles.container} accessibilityLabel={label}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Archive ${label}`}
-        importantForAccessibility={
-          open === 'archive' ? 'auto' : 'no-hide-descendants'
-        }
-        onPress={() => {
-          settle(0);
-          onArchive?.();
-        }}
+      <Animated.View
+        pointerEvents={open === 'archive' ? 'auto' : 'none'}
         style={[
           styles.action,
           styles.left,
-          { backgroundColor: colors.successSurface },
+          { backgroundColor: colors.successSurface, opacity: archiveOpacity },
         ]}>
-        <AppText variant="label" style={{ color: colors.primary }}>
-          Archive
-        </AppText>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Delete ${label}`}
-        importantForAccessibility={
-          open === 'delete' ? 'auto' : 'no-hide-descendants'
-        }
-        onPress={() => {
-          settle(0);
-          onDelete?.();
-        }}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Archive ${label}`}
+          importantForAccessibility={
+            open === 'archive' ? 'auto' : 'no-hide-descendants'
+          }
+          onPress={() => {
+            settle(0);
+            onArchive?.();
+          }}
+          style={styles.actionPress}>
+          <AppText variant="label" style={{ color: colors.primary }}>
+            Archive
+          </AppText>
+        </Pressable>
+      </Animated.View>
+      <Animated.View
+        pointerEvents={open === 'delete' ? 'auto' : 'none'}
         style={[
           styles.action,
           styles.right,
-          { backgroundColor: colors.dangerSurface },
+          { backgroundColor: colors.dangerSurface, opacity: deleteOpacity },
         ]}>
-        <AppText variant="label" style={{ color: colors.danger }}>
-          Delete
-        </AppText>
-      </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${label}`}
+          importantForAccessibility={
+            open === 'delete' ? 'auto' : 'no-hide-descendants'
+          }
+          onPress={() => {
+            settle(0);
+            onDelete?.();
+          }}
+          style={styles.actionPress}>
+          <AppText variant="label" style={{ color: colors.danger }}>
+            Delete
+          </AppText>
+        </Pressable>
+      </Animated.View>
+
       <Animated.View
         {...pan.panHandlers}
-        style={[styles.content, { transform: [{ translateX: position }] }]}>
+        style={[
+          styles.content,
+          {
+            backgroundColor: colors.surface,
+            transform: [{ translateX: position }],
+          },
+        ]}>
         {children}
       </Animated.View>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: { overflow: 'hidden' },
-  content: { backgroundColor: 'transparent' },
+  content: {},
   action: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     width: ACTION_WIDTH,
+  },
+  actionPress: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

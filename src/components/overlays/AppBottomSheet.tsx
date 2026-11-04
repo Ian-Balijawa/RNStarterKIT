@@ -6,21 +6,11 @@ import {
   BottomSheetScrollView,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../theme/theme';
 import { AppText } from '../ui/AppText';
 import { BottomSheetInputContext } from './BottomSheetInputContext';
-import { TrashIcon } from '../ui/TrashIcon';
-
-type HeaderIcon = 'trash';
-
-type HeaderAction = {
-  label: string;
-  onPress: () => void;
-  destructive?: boolean;
-  icon?: HeaderIcon;
-};
 
 type SheetProps = {
   visible: boolean;
@@ -30,7 +20,6 @@ type SheetProps = {
   snapPoints?: Array<string | number>;
   scrollable?: boolean;
   footer?: React.ReactNode;
-  headerAction?: HeaderAction;
 };
 const DEFAULT_SNAP_POINTS = ['60%', '100%'];
 
@@ -43,7 +32,6 @@ export function AppBottomSheet({
   snapPoints = DEFAULT_SNAP_POINTS,
   scrollable = false,
   footer,
-  headerAction,
 }: SheetProps) {
   const ref = useRef<BottomSheetModal>(null);
   const presentedRef = useRef(false);
@@ -82,31 +70,6 @@ export function AppBottomSheet({
       <AppText variant="heading" style={styles.headerTitle} numberOfLines={1}>
         {title}
       </AppText>
-      {headerAction ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={headerAction.label}
-          onPress={headerAction.onPress}
-          hitSlop={8}
-          style={styles.iconButton}>
-          {headerAction.icon === 'trash' ? (
-            <TrashIcon
-              color={headerAction.destructive ? colors.danger : colors.primary}
-              size={24}
-            />
-          ) : (
-            <AppText
-              variant="label"
-              style={{
-                color: headerAction.destructive
-                  ? colors.danger
-                  : colors.primary,
-              }}>
-              {headerAction.label}
-            </AppText>
-          )}
-        </Pressable>
-      ) : null}
     </View>
   ) : null;
 

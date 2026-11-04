@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppBottomSheet } from '../../../components/overlays/AppBottomSheet';
-import { AppDialog } from '../../../components/overlays/AppDialog';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppText } from '../../../components/ui/AppText';
 import { useAppTheme } from '../../../theme/theme';
@@ -55,15 +54,8 @@ export function LedgerDialog({
   const [transactionActionTitle, setTransactionActionTitle] =
     useState('Save expense');
   const [formError, setFormError] = useState('');
-  const [deleteRequest, setDeleteRequest] = useState<{
-    title: string;
-    onConfirm: () => void;
-  } | null>(null);
   const { colors } = useAppTheme();
   useEffect(() => setFormError(''), [dialog]);
-  const confirmDelete = (title: string, onConfirm: () => void) => {
-    setDeleteRequest({ title, onConfirm });
-  };
   const dialogTitle =
     dialog?.kind === 'transaction'
       ? 'New transaction'
@@ -98,54 +90,7 @@ export function LedgerDialog({
       : dialog?.kind === 'subcategory'
       ? 'Add subcategory'
       : null;
-  const headerAction = (() => {
-    if (dialog?.kind === 'budget' && dialog.item) {
-      const id = dialog.item.id;
-      return {
-        label: 'Delete',
-        destructive: true,
-        onPress: () =>
-          confirmDelete('Delete budget?', () => {
-            setLedger(current => ({
-              ...current,
-              budgets: current.budgets.filter(item => item.id !== id),
-            }));
-            onClose();
-          }),
-      };
-    }
-    if (dialog?.kind === 'transactionDetail') {
-      const id = dialog.item.id;
-      return {
-        label: 'Delete',
-        destructive: true,
-        onPress: () =>
-          confirmDelete('Delete transaction?', () => {
-            setLedger(current => ({
-              ...current,
-              transactions: current.transactions.filter(item => item.id !== id),
-            }));
-            onClose();
-          }),
-      };
-    }
-    if (dialog?.kind === 'scheduleDetail') {
-      const id = dialog.item.id;
-      return {
-        label: 'Delete',
-        destructive: true,
-        onPress: () =>
-          confirmDelete('Delete schedule?', () => {
-            setLedger(current => ({
-              ...current,
-              schedules: current.schedules.filter(item => item.id !== id),
-            }));
-            onClose();
-          }),
-      };
-    }
-    return undefined;
-  })();
+
   return (
     <>
       <AppBottomSheet
@@ -155,7 +100,6 @@ export function LedgerDialog({
           onSheetDismissed?.();
         }}
         title={dialogTitle}
-        headerAction={headerAction}
         scrollable
         snapPoints={['65%', '100%']}
         footer={
@@ -271,18 +215,6 @@ export function LedgerDialog({
           />
         ) : null}
       </AppBottomSheet>
-      <AppDialog
-        visible={!!deleteRequest}
-        title={deleteRequest?.title ?? ''}
-        message="This cannot be undone."
-        confirmLabel="Delete"
-        destructive
-        onCancel={() => setDeleteRequest(null)}
-        onConfirm={() => {
-          deleteRequest?.onConfirm();
-          setDeleteRequest(null);
-        }}
-      />
     </>
   );
 }
