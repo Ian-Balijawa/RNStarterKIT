@@ -14,7 +14,6 @@ export type AppSheetOptions = {
   snapPoints?: Array<string | number>;
   scrollable?: boolean;
   footer?: React.ReactNode;
-  headerAction?: { label: string; onPress: () => void; destructive?: boolean };
 };
 type SheetContextValue = {
   showSheet: (options: AppSheetOptions) => void;
@@ -52,8 +51,7 @@ export function AppBottomSheetProvider({
           title={request?.title}
           snapPoints={request?.snapPoints}
           scrollable={request?.scrollable}
-          footer={request?.footer}
-          headerAction={request?.headerAction}>
+          footer={request?.footer}>
           {request?.children}
         </AppBottomSheet>
       </SheetContext.Provider>

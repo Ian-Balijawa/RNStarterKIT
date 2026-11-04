@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppBottomSheet } from '../../../components/overlays/AppBottomSheet';
+import { AppDialog } from '../../../components/overlays/AppDialog';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppText } from '../../../components/ui/AppText';
 import { useAppTheme } from '../../../theme/theme';
@@ -54,6 +55,10 @@ export function LedgerDialog({
   const [transactionActionTitle, setTransactionActionTitle] =
     useState('Save expense');
   const [formError, setFormError] = useState('');
+  const [deleteRequest, setDeleteRequest] = useState<{
+    title: string;
+    onConfirm: () => void;
+  } | null>(null);
   const { colors } = useAppTheme();
   useEffect(() => setFormError(''), [dialog]);
   const dialogTitle =
@@ -90,6 +95,45 @@ export function LedgerDialog({
       : dialog?.kind === 'subcategory'
       ? 'Add subcategory'
       : null;
+  const deleteAction = (() => {
+    if (dialog?.kind === 'budget' && dialog.item) {
+      const id = dialog.item.id;
+      return {
+        title: 'Delete budget',
+        prompt: 'Delete budget?',
+        onConfirm: () =>
+          setLedger(current => ({
+            ...current,
+            budgets: current.budgets.filter(item => item.id !== id),
+          })),
+      };
+    }
+    if (dialog?.kind === 'transactionDetail') {
+      const id = dialog.item.id;
+      return {
+        title: 'Delete transaction',
+        prompt: 'Delete transaction?',
+        onConfirm: () =>
+          setLedger(current => ({
+            ...current,
+            transactions: current.transactions.filter(item => item.id !== id),
+          })),
+      };
+    }
+    if (dialog?.kind === 'scheduleDetail') {
+      const id = dialog.item.id;
+      return {
+        title: 'Delete schedule',
+        prompt: 'Delete schedule?',
+        onConfirm: () =>
+          setLedger(current => ({
+            ...current,
+            schedules: current.schedules.filter(item => item.id !== id),
+          })),
+      };
+    }
+    return null;
+  })();
 
   return (
     <>
@@ -103,7 +147,7 @@ export function LedgerDialog({
         scrollable
         snapPoints={['65%', '100%']}
         footer={
-          actionTitle ? (
+          actionTitle || deleteAction ? (
             <View style={footerStyles.content}>
               {formError ? (
                 <AppText
@@ -113,10 +157,28 @@ export function LedgerDialog({
                   {formError}
                 </AppText>
               ) : null}
-              <AppButton
-                title={actionTitle}
-                onPress={() => formRef.current?.submit()}
-              />
+              <View style={footerStyles.actions}>
+                {deleteAction ? (
+                  <AppButton
+                    title={deleteAction.title}
+                    variant="danger"
+                    style={footerStyles.action}
+                    onPress={() =>
+                      setDeleteRequest({
+                        title: deleteAction.prompt,
+                        onConfirm: deleteAction.onConfirm,
+                      })
+                    }
+                  />
+                ) : null}
+                {actionTitle ? (
+                  <AppButton
+                    title={actionTitle}
+                    style={footerStyles.action}
+                    onPress={() => formRef.current?.submit()}
+                  />
+                ) : null}
+              </View>
             </View>
           ) : undefined
         }>
@@ -215,10 +277,25 @@ export function LedgerDialog({
           />
         ) : null}
       </AppBottomSheet>
+      <AppDialog
+        visible={!!deleteRequest}
+        title={deleteRequest?.title ?? ''}
+        message="This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onCancel={() => setDeleteRequest(null)}
+        onConfirm={() => {
+          deleteRequest?.onConfirm();
+          setDeleteRequest(null);
+          onClose();
+        }}
+      />
     </>
   );
 }
 
 const footerStyles = StyleSheet.create({
   content: { gap: 8, alignSelf: 'stretch' },
+  actions: { flexDirection: 'row', gap: 8 },
+  action: { flex: 1 },
 });

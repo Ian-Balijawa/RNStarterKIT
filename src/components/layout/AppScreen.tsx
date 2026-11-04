@@ -116,10 +116,13 @@ export function AppScreen({
         padded && styles.padded,
         {
           paddingTop: spacing.lg,
-          paddingBottom: contentBottomPadding ?? spacing.lg,
+          paddingBottom: spacing.lg,
           gap: spacing.lg,
         },
         contentContainerStyle,
+        contentBottomPadding === undefined
+          ? undefined
+          : { paddingBottom: contentBottomPadding },
       ]}>
       {children}
     </Animated.ScrollView>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppScreen } from '../../../components/layout/AppScreen';
 import { AppTextInput } from '../../../components/forms/AppTextInput';
 import { AppBottomSheet } from '../../../components/overlays/AppBottomSheet';
@@ -45,6 +46,7 @@ export function ProfileScreen({
   onOpenDialog: (dialog: Dialog) => void;
 }) {
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const recordActions = useRecordActions();
   const [name, setName] = useState(profile?.name ?? '');
   const [phone, setPhone] = useState(profile?.phone ?? '');
@@ -82,6 +84,7 @@ export function ProfileScreen({
         scroll
         padded={false}
         safeTop={false}
+        contentBottomPadding={insets.bottom + 16}
         contentContainerStyle={ledgerStyles.scrollContent}
         collapseThreshold={120}
         collapsedHeader={

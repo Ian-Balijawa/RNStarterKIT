@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 16,
     gap: 16,
   },
   header: {
@@ -157,8 +157,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { flex: 1, minWidth: 0 },
-  scrollContent: { paddingBottom: 24 },
-  scrollWithFooter: { paddingBottom: 152 },
+  scrollContent: { paddingBottom: 16 },
+  scrollWithFooter: { paddingBottom: 112 },
   footer: {
     marginHorizontal: 16,
     marginBottom: 8,

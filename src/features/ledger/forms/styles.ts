@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
-  form: { gap: 20, paddingBottom: 24 },
+  form: { gap: 20 },
   field: { gap: 10 },
   choices: { flexDirection: 'row', width: '100%', gap: 8, alignItems: 'stretch' },
   choice: {
