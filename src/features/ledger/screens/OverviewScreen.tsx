@@ -261,5 +261,5 @@ const compactStyles = StyleSheet.create({
   },
   balance: { flex: 1, minWidth: 0, gap: 2 },
   periodTotals: { alignItems: 'flex-end', gap: 2 },
-  scrollContent: { paddingBottom: 104 },
+  scrollContent: { paddingBottom: 84 },
 });

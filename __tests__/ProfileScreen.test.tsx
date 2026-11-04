@@ -13,6 +13,25 @@ jest.mock('react-native-gesture-handler', () => ({
 jest.mock('@gorhom/bottom-sheet', () => ({
   BottomSheetTextInput: require('react-native').TextInput,
 }));
+jest.mock('../src/components/overlays/AppBottomSheet', () => ({
+  AppBottomSheet: ({
+    visible,
+    children,
+    footer,
+  }: {
+    visible: boolean;
+    children: React.ReactNode;
+    footer?: React.ReactNode;
+  }) =>
+    visible
+      ? require('react').createElement(
+          require('react-native').View,
+          null,
+          children,
+          footer,
+        )
+      : null,
+}));
 
 test('shows the saved name, ledger totals, account preview, and latest expense', async () => {
   const transactions: Transaction[] = [

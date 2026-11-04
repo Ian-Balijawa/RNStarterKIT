@@ -6,6 +6,8 @@ import { LedgerIcon } from '../LedgerIcon';
 import { LedgerState, Transaction, formatUGX } from '../model';
 import { dateLabel, timeLabel } from '../format';
 import { styles } from '../styles';
+import { SwipeActionRow } from './SwipeActionRow';
+import { useRecordActions } from './RecordActions';
 
 export function EntryRow({
   item,
@@ -17,6 +19,7 @@ export function EntryRow({
   onPress: () => void;
 }) {
   const { colors } = useAppTheme();
+  const actions = useRecordActions();
   const category = ledger.categories.find(
     value => value.id === item.categoryId,
   );
@@ -40,10 +43,28 @@ export function EntryRow({
       : item.kind === 'expense'
       ? colors.danger
       : colors.primary;
-  return (
+  const row = (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${title}, ${item.kind}, ${formatUGX(item.amount)}`}
+      accessibilityActions={
+        actions
+          ? [
+              { name: 'archive', label: 'Archive' },
+              { name: 'delete', label: 'Delete' },
+            ]
+          : undefined
+      }
+      onAccessibilityAction={
+        actions
+          ? event => {
+              if (event.nativeEvent.actionName === 'archive')
+                actions.archiveTransaction(item);
+              if (event.nativeEvent.actionName === 'delete')
+                actions.deleteTransaction(item);
+            }
+          : undefined
+      }
       onPress={onPress}
       style={({ pressed }) => [
         styles.entry,
@@ -80,5 +101,15 @@ export function EntryRow({
         {formatUGX(item.amount)}
       </AppText>
     </Pressable>
+  );
+  return actions ? (
+    <SwipeActionRow
+      label={title}
+      onArchive={() => actions.archiveTransaction(item)}
+      onDelete={() => actions.deleteTransaction(item)}>
+      {row}
+    </SwipeActionRow>
+  ) : (
+    row
   );
 }

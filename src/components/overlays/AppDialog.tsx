@@ -41,8 +41,13 @@ export function AppDialog({
         <View
           style={[
             styles.panel,
-            { backgroundColor: colors.surface, borderRadius: radius.lg },
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              borderRadius: radius.lg,
+            },
           ]}
+          accessibilityRole="alert"
           accessibilityViewIsModal>
           <AppText variant="heading">{title}</AppText>
           {message ? <AppText muted>{message}</AppText> : null}
@@ -67,6 +72,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
-  panel: { width: '100%', maxWidth: 420, padding: 20, gap: 16 },
+  panel: { width: '100%', maxWidth: 420, padding: 20, gap: 16, borderWidth: 1 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
 });

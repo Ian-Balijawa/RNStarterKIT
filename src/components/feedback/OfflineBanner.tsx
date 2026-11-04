@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useAppTheme } from '../../theme/theme';
 import { AppText } from '../ui/AppText';
-export function OfflineBanner() {
+export function OfflineBanner({ pendingCount }: { pendingCount?: number }) {
   const { online, known } = useNetworkStatus();
   const { colors } = useAppTheme();
   if (!known || online) {
@@ -14,7 +14,8 @@ export function OfflineBanner() {
       accessibilityRole="alert"
       style={[styles.banner, { backgroundColor: colors.warningSurface }]}>
       <AppText variant="label" style={{ color: colors.warning }}>
-        You're offline
+        Offline · Changes stay on this device
+        {pendingCount ? ` · ${pendingCount} ready for sync` : ''}
       </AppText>
     </View>
   );

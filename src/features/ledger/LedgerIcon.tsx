@@ -13,7 +13,9 @@ export type LedgerIconName =
   | 'expense'
   | 'transfer'
   | 'clock'
-  | 'chevron';
+  | 'chevron'
+  | 'edit'
+  | 'bell';
 
 export function LedgerIcon({
   name,
@@ -109,6 +111,23 @@ export function LedgerIcon({
         </>
       )}
       {name === 'chevron' && <Path d="m9 5 7 7-7 7" {...common} />}
+      {name === 'edit' && (
+        <>
+          <Path
+            d="M12 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"
+            {...common}
+          />
+          <Path d="m16 4 4 4-9 9-4 1 1-4 8-10Z" {...common} />
+        </>
+      )}
+      {name === 'bell' && (
+        <>
+          <Path
+            d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"
+            {...common}
+          />
+        </>
+      )}
     </Svg>
   );
 }

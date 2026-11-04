@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { AppScreen } from '../../../components/layout/AppScreen';
 import { AppTextInput } from '../../../components/forms/AppTextInput';
+import { AppBottomSheet } from '../../../components/overlays/AppBottomSheet';
 import { AppButton } from '../../../components/ui/AppButton';
 import { AppText } from '../../../components/ui/AppText';
 import { useAppTheme } from '../../../theme/theme';
@@ -16,6 +11,7 @@ import { EntryRow } from '../components/EntryRow';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { SectionTitle } from '../components/SectionTitle';
 import { Surface } from '../components/Surface';
+import { useRecordActions } from '../components/RecordActions';
 import { Account, LedgerState, Transaction, formatUGX } from '../model';
 import { Dialog, Tab } from '../navigation';
 import { LedgerProfile, validateProfile } from '../profile';
@@ -29,6 +25,9 @@ export function ProfileScreen({
   recent,
   onSave,
   onBack,
+  onOpenNotifications,
+  unreadCount,
+  pendingCount,
   onSelectTab,
   onOpenDialog,
 }: {
@@ -39,14 +38,19 @@ export function ProfileScreen({
   recent: Transaction[];
   onSave: (profile: LedgerProfile) => void;
   onBack: () => void;
+  onOpenNotifications?: () => void;
+  unreadCount?: number;
+  pendingCount?: number;
   onSelectTab: (tab: Tab) => void;
   onOpenDialog: (dialog: Dialog) => void;
 }) {
   const { colors } = useAppTheme();
+  const recordActions = useRecordActions();
   const [name, setName] = useState(profile?.name ?? '');
   const [phone, setPhone] = useState(profile?.phone ?? '');
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const displayName = profile?.name.trim() || 'Your profile';
   const gross = ledger.transactions.reduce(
     (totals, item) => {
@@ -70,11 +74,10 @@ export function ProfileScreen({
     onSave({ name: name.trim(), phone: phone.trim() });
     setError('');
     setSaved(true);
+    setEditOpen(false);
   };
   return (
-    <KeyboardAvoidingView
-      style={ledgerStyles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <>
       <AppScreen
         scroll
         padded={false}
@@ -85,7 +88,7 @@ export function ProfileScreen({
           <View style={styles.collapsed}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Back to overview"
+              accessibilityLabel="Back to previous screen"
               onPress={onBack}
               style={styles.collapsedBack}>
               <AppText variant="heading" style={{ color: colors.primary }}>
@@ -111,13 +114,32 @@ export function ProfileScreen({
         <View style={styles.topBar}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Back to overview"
+            accessibilityLabel="Back to previous screen"
             onPress={onBack}
             style={styles.backButton}>
             <AppText variant="label" style={{ color: colors.primary }}>
-              ‹ Overview
+              ‹ Back
             </AppText>
           </Pressable>
+          {onOpenNotifications ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Open notifications${
+                unreadCount ? `, ${unreadCount} unread` : ''
+              }`}
+              onPress={onOpenNotifications}
+              style={styles.notificationButton}>
+              <LedgerIcon name="bell" color={colors.primary} size={23} />
+              {unreadCount ? (
+                <View
+                  style={[
+                    styles.notificationDot,
+                    { backgroundColor: colors.danger },
+                  ]}
+                />
+              ) : null}
+            </Pressable>
+          ) : null}
         </View>
         <View style={styles.intro}>
           <ProfileAvatar name={profile?.name ?? name} size={72} />
@@ -134,7 +156,35 @@ export function ProfileScreen({
                 : 'Add your details to make this ledger yours.'}
             </AppText>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={profile ? 'Edit profile' : 'Create profile'}
+            onPress={() => {
+              setName(profile?.name ?? '');
+              setPhone(profile?.phone ?? '');
+              setError('');
+              setEditOpen(true);
+            }}
+            style={[
+              styles.editButton,
+              { backgroundColor: colors.successSurface },
+            ]}>
+            <LedgerIcon name="edit" color={colors.primary} size={20} />
+          </Pressable>
         </View>
+        {saved ? (
+          <AppText
+            variant="caption"
+            accessibilityLiveRegion="polite"
+            style={{ color: colors.success }}>
+            Profile saved on this device.
+          </AppText>
+        ) : null}
+        {pendingCount ? (
+          <AppText variant="caption" muted>
+            {pendingCount} local changes ready for future sync.
+          </AppText>
+        ) : null}
         <View style={[styles.balanceCard, { backgroundColor: colors.hero }]}>
           <AppText style={styles.balanceLabel}>TOTAL ACROSS ACCOUNTS</AppText>
           <AppText
@@ -293,74 +343,133 @@ export function ProfileScreen({
             </Surface>
           )}
         </View>
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}>
-          <View style={styles.formHeading}>
-            <AppText variant="heading">
-              {profile ? 'Your details' : 'Create your profile'}
-            </AppText>
-            <AppText variant="caption" muted>
-              {profile
-                ? 'Saved on this device.'
-                : 'Add your name and phone number to personalize your ledger.'}
-            </AppText>
+        {ledger.accounts.some(item => item.archivedAt) ||
+        ledger.transactions.some(item => item.archivedAt) ? (
+          <View style={styles.section}>
+            <SectionTitle title="Archived records" />
+            <Surface>
+              {ledger.accounts
+                .filter(item => item.archivedAt)
+                .map(item => (
+                  <View key={item.id} style={styles.archiveRow}>
+                    <View style={styles.accountName}>
+                      <AppText variant="label" numberOfLines={1}>
+                        {item.name}
+                      </AppText>
+                      <AppText variant="caption" muted>
+                        Account
+                      </AppText>
+                    </View>
+                    <AppButton
+                      title="Restore"
+                      variant="ghost"
+                      onPress={() => recordActions?.restoreAccount(item)}
+                    />
+                  </View>
+                ))}
+              {ledger.transactions
+                .filter(item => item.archivedAt)
+                .map(item => (
+                  <View key={item.id} style={styles.archiveRow}>
+                    <View style={styles.accountName}>
+                      <AppText variant="label" numberOfLines={1}>
+                        {item.note || item.kind}
+                      </AppText>
+                      <AppText variant="caption" muted>
+                        {formatUGX(item.amount)} · Transaction
+                      </AppText>
+                    </View>
+                    <AppButton
+                      title="Restore"
+                      variant="ghost"
+                      onPress={() => recordActions?.restoreTransaction(item)}
+                    />
+                  </View>
+                ))}
+            </Surface>
           </View>
-          <AppTextInput
-            label="Full name"
-            value={name}
-            onChangeText={value => {
-              setName(value);
-              setSaved(false);
-            }}
-            autoCapitalize="words"
-            autoComplete="name"
-            returnKeyType="next"
-            required
-          />
-          <AppTextInput
-            label="Phone number"
-            value={phone}
-            onChangeText={value => {
-              setPhone(value);
-              setSaved(false);
-            }}
-            keyboardType="phone-pad"
-            autoComplete="tel"
-            placeholder="e.g. +256 700 000 000"
-            required
-          />
-          {error ? (
-            <AppText
-              variant="caption"
-              accessibilityLiveRegion="polite"
-              style={{ color: colors.danger }}>
-              {error}
-            </AppText>
-          ) : null}
-          {saved ? (
-            <AppText
-              variant="caption"
-              accessibilityLiveRegion="polite"
-              style={{ color: colors.success }}>
-              Profile saved on this device.
-            </AppText>
-          ) : null}
+        ) : null}
+      </AppScreen>
+      <AppBottomSheet
+        visible={editOpen}
+        onDismiss={() => setEditOpen(false)}
+        title={profile ? 'Edit profile' : 'Create profile'}
+        snapPoints={['55%', '85%']}
+        scrollable
+        footer={
           <AppButton
             title={profile ? 'Save changes' : 'Create profile'}
             onPress={submit}
           />
+        }>
+        <View style={styles.formHeading}>
+          <AppText variant="heading">
+            {profile ? 'Your details' : 'Create your profile'}
+          </AppText>
+          <AppText variant="caption" muted>
+            {profile
+              ? 'Saved on this device.'
+              : 'Add your name and phone number to personalize your ledger.'}
+          </AppText>
         </View>
-      </AppScreen>
-    </KeyboardAvoidingView>
+        <AppTextInput
+          label="Full name"
+          value={name}
+          onChangeText={value => {
+            setName(value);
+            setSaved(false);
+          }}
+          autoCapitalize="words"
+          autoComplete="name"
+          returnKeyType="next"
+          required
+        />
+        <AppTextInput
+          label="Phone number"
+          value={phone}
+          onChangeText={value => {
+            setPhone(value);
+            setSaved(false);
+          }}
+          keyboardType="phone-pad"
+          autoComplete="tel"
+          placeholder="e.g. +256 700 000 000"
+          required
+        />
+        {error ? (
+          <AppText
+            variant="caption"
+            accessibilityLiveRegion="polite"
+            style={{ color: colors.danger }}>
+            {error}
+          </AppText>
+        ) : null}
+      </AppBottomSheet>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  topBar: { alignItems: 'flex-start' },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   backButton: { minHeight: 44, justifyContent: 'center' },
+  notificationButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   collapsed: {
     width: '100%',
     maxWidth: 680,
@@ -383,6 +492,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   introText: { flex: 1, minWidth: 0, gap: 3 },
+  editButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   eyebrow: { fontWeight: '700', letterSpacing: 1.5 },
   balanceCard: { borderRadius: 24, padding: 22, gap: 8 },
   balanceLabel: {
@@ -418,8 +534,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   accountName: { flex: 1, minWidth: 0 },
+  archiveRow: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   moreAccounts: { paddingVertical: 12 },
   latestExpenseLabel: { paddingTop: 14, fontWeight: '700', letterSpacing: 1.2 },
-  card: { borderWidth: 1, borderRadius: 20, padding: 20, gap: 18 },
   formHeading: { gap: 3 },
 });

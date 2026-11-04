@@ -72,20 +72,11 @@ function Glyph({
 
 type Props = {
   children: React.ReactNode;
-  /** Shown in the greeting, e.g. "Welcome back, Ian". Optional. */
   userName?: string;
-  /**
-   * How long the app may stay in the background before it asks again.
-   * 0 (default) locks as soon as the app is backgrounded.
-   */
   lockAfterMs?: number;
 };
 
 type LockProps = Props & {
-  /**
-   * The lock is skipped in development builds (__DEV__).
-   * Set this to true to preview the lock screen while developing.
-   */
   enabledInDev?: boolean;
 };
 
@@ -95,24 +86,6 @@ export function BiometricLock({ enabledInDev = false, ...props }: LockProps) {
   }
   return <BiometricGate {...props} />;
 }
-
-const FEATURES: { icon: IconName; title: string; body: string }[] = [
-  {
-    icon: 'receipt',
-    title: 'Log in seconds',
-    body: 'Record income, expenses and transfers as they happen.',
-  },
-  {
-    icon: 'target',
-    title: 'Stay on budget',
-    body: 'Set weekly, monthly or yearly limits by category.',
-  },
-  {
-    icon: 'shield',
-    title: 'Private by design',
-    body: 'Your data stays on this device, behind your phone lock.',
-  },
-];
 
 function BiometricGate({ children, userName, lockAfterMs = 0 }: Props) {
   const { colors } = useAppTheme();
@@ -259,16 +232,16 @@ function BiometricGate({ children, userName, lockAfterMs = 0 }: Props) {
 
             <View style={styles.headline}>
               <AppText variant="caption" muted style={styles.eyebrow}>
-                PERSONAL EXPENSE TRACKER
+                YOUR PRIVATE LEDGER
               </AppText>
               <AppText
                 variant="display"
                 accessibilityRole="header"
                 style={styles.title}>
-                Know where every shilling goes.
+                Your money, for your eyes only.
               </AppText>
               <AppText muted style={styles.subtitle}>
-                {greeting}. Your money is private.
+                {greeting}. Unlock to see your balances and activity.
               </AppText>
             </View>
 
@@ -279,46 +252,32 @@ function BiometricGate({ children, userName, lockAfterMs = 0 }: Props) {
               <AppText style={styles.previewKicker}>
                 TOTAL ACROSS ACCOUNTS
               </AppText>
-              <View style={styles.previewMask}>
-                {[0, 1, 2, 3, 4].map(i => (
-                  <View key={i} style={styles.previewDot} />
-                ))}
-              </View>
+              <AppText style={styles.previewAmount}>UGX ••••••</AppText>
               <View style={styles.previewDivider} />
-              <View style={styles.previewBottom}>
-                <AppText style={styles.previewSmall}>Income</AppText>
-                <AppText style={styles.previewSmall}>Expenses</AppText>
-              </View>
+              <AppText style={styles.previewSmall}>
+                Balances stay hidden until you unlock.
+              </AppText>
             </View>
 
-            <View style={styles.features}>
-              {FEATURES.map(item => (
-                <View
-                  key={item.title}
-                  style={[
-                    styles.feature,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                  ]}>
-                  <View
-                    accessibilityElementsHidden
-                    importantForAccessibility="no-hide-descendants"
-                    style={[
-                      styles.featureIcon,
-                      { backgroundColor: colors.successSurface },
-                    ]}>
-                    <Glyph name={item.icon} color={colors.primary} size={22} />
-                  </View>
-                  <View style={styles.featureText}>
-                    <AppText variant="label">{item.title}</AppText>
-                    <AppText variant="caption" muted>
-                      {item.body}
-                    </AppText>
-                  </View>
-                </View>
-              ))}
+            <View
+              style={[
+                styles.securityNote,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}>
+              <View
+                style={[
+                  styles.securityIcon,
+                  { backgroundColor: colors.successSurface },
+                ]}>
+                <Glyph name="shield" color={colors.primary} size={22} />
+              </View>
+              <View style={styles.featureText}>
+                <AppText variant="label">Protected by your device</AppText>
+                <AppText variant="caption" muted>
+                  Use your fingerprint, face, or screen lock. Your ledger stays
+                  available offline.
+                </AppText>
+              </View>
             </View>
 
             {message ? (
@@ -379,7 +338,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 440,
     alignSelf: 'center',
-    gap: 22,
+    gap: 24,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logo: {
@@ -392,7 +351,7 @@ const styles = StyleSheet.create({
   brandName: { fontWeight: '800', fontSize: 16 },
   headline: { gap: 8 },
   eyebrow: { fontWeight: '800', letterSpacing: 1.6 },
-  title: { fontSize: 32, lineHeight: 38 },
+  title: { fontSize: 34, lineHeight: 40, maxWidth: 330 },
   subtitle: { fontSize: 15 },
   previewCard: { borderRadius: 24, padding: 20, gap: 12 },
   previewKicker: {
@@ -401,18 +360,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1.2,
   },
-  previewMask: { flexDirection: 'row', gap: 8, paddingVertical: 8 },
-  previewDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.85)',
+  previewAmount: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    lineHeight: 40,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   previewDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.23)' },
-  previewBottom: { flexDirection: 'row', justifyContent: 'space-between' },
   previewSmall: { color: '#D8E8DD', fontSize: 13 },
-  features: { gap: 10 },
-  feature: {
+  securityNote: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -420,7 +377,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 14,
   },
-  featureIcon: {
+  securityIcon: {
     width: 42,
     height: 42,
     borderRadius: 14,

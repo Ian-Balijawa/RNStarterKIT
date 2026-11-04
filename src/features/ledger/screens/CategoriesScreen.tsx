@@ -26,7 +26,12 @@ type Props = {
 
 type CategoryKind = 'expense' | 'income';
 
-export function CategoriesScreen({ header, ledger, onOpenDialog, showFloatingActions = true }: Props) {
+export function CategoriesScreen({
+  header,
+  ledger,
+  onOpenDialog,
+  showFloatingActions = true,
+}: Props) {
   const { colors } = useAppTheme();
   const [kind, setKind] = useState<CategoryKind>('expense');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
@@ -189,7 +194,7 @@ export function CategoriesScreen({ header, ledger, onOpenDialog, showFloatingAct
 }
 
 const localStyles = StyleSheet.create({
-  scrollContent: { paddingBottom: 176 },
+  scrollContent: { paddingBottom: 144 },
   intro: { gap: 8 },
   focusCard: { gap: 18 },
   focusHeading: {

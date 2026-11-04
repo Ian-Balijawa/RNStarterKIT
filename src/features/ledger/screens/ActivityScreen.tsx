@@ -1,6 +1,6 @@
 import React from 'react';
-import { Animated, Pressable, View } from 'react-native';
-import { AppScreen } from '../../../components/layout/AppScreen';
+import { Animated, Pressable, RefreshControl, View } from 'react-native';
+import { AppScreen, useAppRefresh } from '../../../components/layout/AppScreen';
 import { AppText } from '../../../components/ui/AppText';
 import { useAppTheme } from '../../../theme/theme';
 import { LedgerIcon } from '../LedgerIcon';
@@ -57,6 +57,7 @@ export function ActivityScreen({
   showFloatingActions = true,
 }: Props) {
   const { colors } = useAppTheme();
+  const refresh = useAppRefresh();
   return (
     <View style={styles.flex}>
       <AppScreen
@@ -73,6 +74,16 @@ export function ActivityScreen({
         renderScrollable={onScroll => (
           <Animated.FlatList
             style={styles.flex}
+            contentInsetAdjustmentBehavior="never"
+            refreshControl={
+              refresh ? (
+                <RefreshControl
+                  refreshing={refresh.refreshing}
+                  onRefresh={refresh.onRefresh}
+                  tintColor={colors.primary}
+                />
+              ) : undefined
+            }
             onScroll={onScroll}
             scrollEventThrottle={16}
             data={recent.filter(

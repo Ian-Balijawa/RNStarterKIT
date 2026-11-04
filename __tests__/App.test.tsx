@@ -9,6 +9,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppThemeProvider } from '../src/theme/theme';
 import { AppBottomSheetProvider } from '../src/components/overlays/AppBottomSheetProvider';
 import { LedgerApp } from '../src/features/ledger/LedgerApp';
+import { LedgerTabBar } from '../src/features/ledger/components/LedgerTabBar';
+import { LedgerHeader } from '../src/features/ledger/components/LedgerHeader';
 
 jest.mock(
   'react-native-safe-area-context',
@@ -25,6 +27,32 @@ jest.mock('react-native-simple-biometrics', () => ({
 
 jest.mock('react-native-gesture-handler', () => ({
   GestureHandlerRootView: require('react-native').View,
+}));
+jest.mock('@react-native-community/netinfo', () => ({
+  useNetInfo: () => ({
+    isConnected: true,
+    isInternetReachable: true,
+    type: 'wifi',
+  }),
+}));
+jest.mock('../src/components/overlays/AppBottomSheet', () => ({
+  AppBottomSheet: ({
+    visible,
+    children,
+    footer,
+  }: {
+    visible: boolean;
+    children: React.ReactNode;
+    footer?: React.ReactNode;
+  }) =>
+    visible
+      ? require('react').createElement(
+          require('react-native').View,
+          null,
+          children,
+          footer,
+        )
+      : null,
 }));
 jest.mock('react-native-mmkv', () => ({
   createMMKV: () => {
@@ -76,8 +104,12 @@ jest.mock('react-native-maps', () => {
 
 import App from '../App';
 
-const globalWithDev = global as unknown as { __DEV__: boolean };
+const globalWithDev = globalThis as unknown as { __DEV__: boolean };
 const originalDev = globalWithDev.__DEV__;
+const output = (renderer: ReactTestRenderer.ReactTestRenderer) =>
+  JSON.stringify(renderer.toJSON(), (key, value) =>
+    key === 'refreshControl' ? undefined : value,
+  );
 
 afterEach(() => {
   globalWithDev.__DEV__ = originalDev;
@@ -89,16 +121,14 @@ test('renders correctly', async () => {
   });
 });
 
-test('skips the lock in development builds', async () => {
+test('renders the ledger without authentication in development', async () => {
   globalWithDev.__DEV__ = true;
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
     renderer = ReactTestRenderer.create(<App />);
   });
 
-  expect(JSON.stringify(renderer.toJSON())).not.toContain(
-    'PERSONAL EXPENSE TRACKER',
-  );
+  expect(output(renderer)).not.toContain('PERSONAL EXPENSE TRACKER');
   expect(
     renderer.root.findAllByProps({ accessibilityLabel: 'Open profile' }).length,
   ).toBeGreaterThan(0);
@@ -112,9 +142,7 @@ test('skips the lock in development builds', async () => {
     renderer = ReactTestRenderer.create(<App />);
   });
 
-  expect(JSON.stringify(renderer.toJSON())).not.toContain(
-    'PERSONAL EXPENSE TRACKER',
-  );
+  expect(output(renderer)).not.toContain('PERSONAL EXPENSE TRACKER');
   await ReactTestRenderer.act(async () => renderer.unmount());
 });
 
@@ -140,6 +168,14 @@ test('creates a profile from the overview avatar and shows its initials', async 
       .findByProps({ accessibilityLabel: 'Open profile' })
       .props.onPress();
   });
+  expect(
+    renderer.root.findAllByProps({ accessibilityLabel: 'Full name' }),
+  ).toHaveLength(0);
+  await ReactTestRenderer.act(() => {
+    renderer.root
+      .findByProps({ accessibilityLabel: 'Create profile' })
+      .props.onPress();
+  });
   const input = (label: string) =>
     renderer.root.findByProps({ accessibilityLabel: label });
   await ReactTestRenderer.act(() => {
@@ -156,11 +192,45 @@ test('creates a profile from the overview avatar and shows its initials', async 
   // collapsed header. Both call onBack, so press the first one.
   await ReactTestRenderer.act(() => {
     renderer.root
-      .findAllByProps({ accessibilityLabel: 'Back to overview' })[0]
+      .findAllByProps({ accessibilityLabel: 'Back to previous screen' })[0]
       .props.onPress();
   });
   expect(
     renderer.root.findAllByProps({ accessibilityLabel: 'Open profile' }).length,
   ).toBeGreaterThan(0);
-  expect(JSON.stringify(renderer.toJSON())).toContain('AN');
+  expect(output(renderer)).toContain('AN');
+});
+
+test('opens profile from another tab and returns to that tab', async () => {
+  let renderer!: ReactTestRenderer.ReactTestRenderer;
+  await ReactTestRenderer.act(async () => {
+    renderer = ReactTestRenderer.create(
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 375, height: 812 },
+          insets: { top: 0, right: 0, bottom: 0, left: 0 },
+        }}>
+        <AppThemeProvider>
+          <AppBottomSheetProvider>
+            <LedgerApp />
+          </AppBottomSheetProvider>
+        </AppThemeProvider>
+      </SafeAreaProvider>,
+    );
+  });
+  await ReactTestRenderer.act(() =>
+    renderer.root.findByType(LedgerTabBar).props.onSelectTab('accounts'),
+  );
+  expect(renderer.root.findByType(LedgerHeader).props.title).toBe('Accounts');
+  await ReactTestRenderer.act(() =>
+    renderer.root
+      .findByProps({ accessibilityLabel: 'Open profile' })
+      .props.onPress(),
+  );
+  await ReactTestRenderer.act(() =>
+    renderer.root
+      .findAllByProps({ accessibilityLabel: 'Back to previous screen' })[0]
+      .props.onPress(),
+  );
+  expect(renderer.root.findByType(LedgerHeader).props.title).toBe('Accounts');
 });

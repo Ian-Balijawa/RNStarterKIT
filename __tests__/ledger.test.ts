@@ -1,5 +1,6 @@
 import {
   accountBalance,
+  openingBalanceForCurrentBalance,
   budgetSpent,
   inPeriod,
   nextOccurrence,
@@ -60,6 +61,17 @@ test('transfers move funds without counting as income or spending', () => {
   expect(
     totalsFor(entries, 'daily', new Date('2026-11-03T18:00:00+03:00')),
   ).toEqual({ income: 40000, expense: 15000 });
+});
+
+test('editing a cash account sets the current balance without adding past entries again', () => {
+  const openingBalance = openingBalanceForCurrentBalance(cash, entries, 120000);
+  const updated = { ...cash, openingBalance };
+  expect(accountBalance(updated, entries)).toBe(120000);
+  const secondEdit = {
+    ...updated,
+    openingBalance: openingBalanceForCurrentBalance(updated, entries, 90000),
+  };
+  expect(accountBalance(secondEdit, entries)).toBe(90000);
 });
 
 test('budgets count only matching expenses in their period', () => {

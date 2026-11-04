@@ -38,8 +38,9 @@ export function TransactionForm({
 }) {
   const [kind, setKind] = useState<EntryKind>(initialKind);
   const [amount, setAmount] = useState('');
-  const [accountId, setAccountId] = useState(ledger.accounts[0]?.id ?? '');
-  const [toAccountId, setToAccountId] = useState(ledger.accounts[1]?.id ?? '');
+  const activeAccounts = ledger.accounts.filter(item => !item.archivedAt);
+  const [accountId, setAccountId] = useState(activeAccounts[0]?.id ?? '');
+  const [toAccountId, setToAccountId] = useState(activeAccounts[1]?.id ?? '');
   const [categoryId, setCategoryId] = useState('food');
   const [subcategory, setSubcategory] = useState('');
   const [note, setNote] = useState('');
@@ -148,7 +149,7 @@ export function TransactionForm({
             ? 'Into account'
             : 'Paid from'
         }
-        options={ledger.accounts.map(item => ({
+        options={activeAccounts.map(item => ({
           label: item.name,
           value: item.id,
         }))}
@@ -158,7 +159,7 @@ export function TransactionForm({
       {kind === 'transfer' ? (
         <LedgerChoiceField
           label="To account"
-          options={ledger.accounts
+          options={activeAccounts
             .filter(item => item.id !== accountId)
             .map(item => ({ label: item.name, value: item.id }))}
           value={toAccountId}

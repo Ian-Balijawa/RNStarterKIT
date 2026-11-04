@@ -18,7 +18,7 @@ jest.mock('react-native-safe-area-context', () => ({
 
 const canAuthenticateMock = Biometrics.canAuthenticate as jest.Mock;
 const requestBioAuthMock = Biometrics.requestBioAuth as jest.Mock;
-const globalWithDev = global as unknown as { __DEV__: boolean };
+const globalWithDev = globalThis as unknown as { __DEV__: boolean };
 const originalDev = globalWithDev.__DEV__;
 let onAppStateChange: (state: AppStateStatus) => void;
 let addEventListenerSpy: jest.SpyInstance;

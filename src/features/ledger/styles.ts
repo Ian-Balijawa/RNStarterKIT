@@ -6,13 +6,13 @@ export const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 32,
+    paddingBottom: 20,
     gap: 20,
     maxWidth: 680,
     width: '100%',
     alignSelf: 'center',
   },
-  scrollContentWithFab: { paddingBottom: 112 },
+  scrollContentWithFab: { paddingBottom: 84 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
