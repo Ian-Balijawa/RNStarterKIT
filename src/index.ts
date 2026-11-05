@@ -39,7 +39,6 @@ export {
   AppLoadingState,
 } from './components/feedback/AppStates';
 export { AppErrorBoundary } from './components/feedback/AppErrorBoundary';
-export { OfflineBanner } from './components/feedback/OfflineBanner';
 export { AppList, AppListItem } from './components/lists/AppList';
 export { AppDialog } from './components/overlays/AppDialog';
 export { AppBottomSheet } from './components/overlays/AppBottomSheet';

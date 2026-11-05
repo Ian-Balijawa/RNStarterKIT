@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppDialog } from '../../components/overlays/AppDialog';
-import { OfflineBanner } from '../../components/feedback/OfflineBanner';
 import { AppRefreshProvider } from '../../components/layout/AppScreen';
 import { useAppTheme } from '../../theme/theme';
 import { usePersistedState } from '../../hooks/usePersistedState';
@@ -64,7 +63,9 @@ export function LedgerApp() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [activeTick, setActiveTick] = useState(0);
   const previousScheduleIds = useRef(
-    new Set(ledger.schedules.filter(item => !item.archivedAt).map(item => item.id)),
+    new Set(
+      ledger.schedules.filter(item => !item.archivedAt).map(item => item.id),
+    ),
   );
   useEffect(() => {
     const subscription = AppState.addEventListener('change', state => {
@@ -223,7 +224,9 @@ export function LedgerApp() {
         onConfirm: () =>
           setLedger(current => ({
             ...current,
-            schedules: current.schedules.filter(item => item.id !== schedule.id),
+            schedules: current.schedules.filter(
+              item => item.id !== schedule.id,
+            ),
           })),
       }),
     archiveBudget: budget =>
@@ -368,21 +371,23 @@ export function LedgerApp() {
       );
       if (transaction.kind === 'expense') {
         const date = new Date(transaction.occurredAt);
-        ledger.budgets.filter(budget => !budget.archivedAt).forEach(budget => {
-          const before = budgetSpent(budget, ledger.transactions, date);
-          const after = budgetSpent(
-            budget,
-            [...ledger.transactions, transaction],
-            date,
-          );
-          if (before < budget.amount && after >= budget.amount) {
-            addNotice(
-              'Budget limit reached',
-              `${budget.name} · ${formatUGX(after)} spent`,
-              budget.id,
+        ledger.budgets
+          .filter(budget => !budget.archivedAt)
+          .forEach(budget => {
+            const before = budgetSpent(budget, ledger.transactions, date);
+            const after = budgetSpent(
+              budget,
+              [...ledger.transactions, transaction],
+              date,
             );
-          }
-        });
+            if (before < budget.amount && after >= budget.amount) {
+              addNotice(
+                'Budget limit reached',
+                `${budget.name} · ${formatUGX(after)} spent`,
+                budget.id,
+              );
+            }
+          });
       }
     }
     setDialog(null);
@@ -431,7 +436,6 @@ export function LedgerApp() {
         { backgroundColor: colors.background, paddingTop: insets.top },
       ]}>
       <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
-      <OfflineBanner pendingCount={pendingCount} />
       <AppRefreshProvider value={{ onRefresh, refreshing }}>
         <RecordActionsProvider value={recordActions}>
           <View style={styles.flex}>
@@ -548,9 +552,11 @@ export function LedgerApp() {
           )
         }
         onEnabled={() =>
-          ledger.schedules.filter(item => !item.archivedAt).forEach(item => {
-            scheduleDeviceReminder(item).catch(() => {});
-          })
+          ledger.schedules
+            .filter(item => !item.archivedAt)
+            .forEach(item => {
+              scheduleDeviceReminder(item).catch(() => {});
+            })
         }
       />
       <AppDialog
