@@ -1,21 +1,17 @@
-import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  PressableProps,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { useAppTheme } from '../../theme/theme';
-import { AppText } from './AppText';
-import { AppIcon, IconName } from './AppIcon';
+import React from 'react'
+import { PressableProps, StyleSheet } from 'react-native'
+import { Button } from '@xaui/native/button'
+import { useAppTheme } from '../../theme/theme'
+import { AppIcon, IconName } from './AppIcon'
 
 export type ButtonVariant =
   | 'primary'
   | 'secondary'
   | 'outline'
   | 'ghost'
-  | 'danger';
+  | 'danger'
+
+/** App-level button contract, backed by XAUI's composed button. */
 export function AppButton({
   title,
   variant = 'primary',
@@ -25,12 +21,12 @@ export function AppButton({
   style,
   ...props
 }: Omit<PressableProps, 'children'> & {
-  title?: string;
-  variant?: ButtonVariant;
-  icon?: IconName;
-  loading?: boolean;
+  title?: string
+  variant?: ButtonVariant
+  icon?: IconName
+  loading?: boolean
 }) {
-  const { colors, radius } = useAppTheme();
+  const { colors, radius } = useAppTheme()
   const ink =
     variant === 'primary'
       ? colors.primaryText
@@ -38,54 +34,49 @@ export function AppButton({
       ? colors.danger
       : variant === 'secondary'
       ? colors.text
-      : colors.primary;
+      : colors.primary
   const fill =
     variant === 'primary'
       ? colors.primary
       : variant === 'secondary'
       ? colors.background
-      : 'transparent';
+      : 'transparent'
+  const border =
+    variant === 'outline'
+      ? colors.border
+      : variant === 'danger'
+      ? colors.danger
+      : fill
+  const appearance =
+    variant === 'outline'
+      ? 'tertiary'
+      : variant === 'secondary'
+      ? 'default'
+      : variant
   return (
-    <Pressable
+    <Button
       {...props}
-      disabled={disabled || loading}
-      accessibilityRole="button"
+      variant={appearance}
+      isDisabled={disabled}
+      isLoading={loading}
       accessibilityLabel={props.accessibilityLabel || title}
-      accessibilityState={{ disabled: !!disabled || loading, busy: loading }}
       style={state => [
         styles.button,
-        {
-          backgroundColor: fill,
-          borderColor:
-            variant === 'outline' || variant === 'danger'
-              ? variant === 'danger'
-                ? colors.danger
-                : colors.border
-              : fill,
-          borderRadius: radius.md,
-          opacity: disabled ? 0.45 : state.pressed ? 0.78 : 1,
-        },
+        { backgroundColor: fill, borderColor: border, borderRadius: radius.md },
         typeof style === 'function' ? style(state) : style,
       ]}>
-      {loading ? (
-        <ActivityIndicator color={ink} />
-      ) : (
-        <View style={styles.content}>
-          {icon ? <AppIcon name={icon} color={ink} /> : null}
-          {title ? (
-            <AppText
-              variant="label"
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
-              style={[styles.title, { color: ink }]}>
-              {title}
-            </AppText>
-          ) : null}
-        </View>
-      )}
-    </Pressable>
-  );
+      {icon && !loading ? <AppIcon name={icon} color={ink} /> : null}
+      {title ? (
+        <Button.Label
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.85}
+          style={[styles.label, { color: ink }]}>
+          {title}
+        </Button.Label>
+      ) : null}
+    </Button>
+  )
 }
 const styles = StyleSheet.create({
   button: {
@@ -93,9 +84,7 @@ const styles = StyleSheet.create({
     minWidth: 48,
     paddingHorizontal: 16,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
   },
-  content: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { flexShrink: 1, textAlign: 'center' },
-});
+  label: { flexShrink: 1, textAlign: 'center' },
+})

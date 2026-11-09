@@ -1,29 +1,16 @@
-# Pesa Ledger
+# Church Contributions
 
-A personal expense tracker for Uganda, built with React Native. Amounts are recorded in whole Uganda shillings (UGX). The app works offline and stores its ledger locally on the device.
+A local-first React Native CLI mobile app for church projects, members, recurring pledges and payments in whole Uganda shillings (UGX).
 
-## What you can track
+Register churches and members, assign a home church and additional links, create projects with an owner and participating churches, and record pledges from members of any church. Pledges can be paused, resumed, cancelled or changed from an effective date. Payments may target a project or be distributed across a member's projects, with an allocation preview. Payment history supports voids with a reason. Member details include balances and a period statement; the dashboard and reports show contribution and debt summaries.
 
-- **Overview:** total across accounts, income and spending by day, week, or month, category breakdown, budgets, and recent transactions. Browse earlier periods with the arrow controls.
-- **Activity:** income, expenses, and transfers with their actual date and time. Filter by period and transaction type; open an entry to inspect or delete it.
-- **Accounts:** Cash, Mobile money, and Bank start at zero. Add or edit accounts using their current balance. Transfers move money between accounts without counting as income or spending. Swipe an account or transaction right to archive it, or left to delete it; archived records can be restored from Profile.
-- **Categories:** expense and income categories have subcategories. Add your own categories and subcategories in the Categories tab or while recording a transaction.
-- **Budgets:** weekly or monthly limits for a category or specific subcategory. Spending is calculated from recorded expenses in the current period. Tap a budget to edit or delete it.
-- **Scheduled transactions:** choose a first date and time and a daily, weekly, monthly, quarterly, or yearly recurrence. A schedule is a plan; it does not change balances or budgets until you tap **Record this transaction now** in Activity. Recording advances its next occurrence.
-- **Notifications:** the bell opens a local inbox for recorded entries, due schedules, and budget limits. Enable device alerts there to receive scheduled reminders while the app is closed.
+Daily, weekly and monthly periods use the Kampala calendar. Earlier unpaid periods are overdue; the current period is due now. Payments cover the oldest eligible periods first, including the current period before future advance. The calculation rules, assumptions and local entity relationships are in [MOBILE_IMPLEMENTATION.md](MOBILE_IMPLEMENTATION.md).
 
-Salary, Business, and Loan are included as income categories. You can record that income into any account.
+This is a frontend-first, device-local implementation. It has no login, role enforcement, shared audit log, cloud backup or sync, and it does not process mobile-money payments. Local data can be lost if app data is removed. PDF/CSV export and unallocated-credit reassignment are not yet available. It should not be treated as a shared production financial system until the backend and access controls are implemented.
 
 ## Run
 
-```sh
-npm install
-npm start
-npm run android
-# On macOS, in another terminal:
-cd ios && pod install && cd ..
-npm run ios
-```
+Install dependencies with `bun install`, install iOS pods with `cd ios && pod install`, then run `bun run start` and `bun run ios` or `bun run android` from the project root. This uses React Native CLI, not Expo. Native dependencies are already declared; rerun `pod install` after dependency changes on iOS.
 
 ## Check
 
@@ -33,4 +20,4 @@ npm run lint
 npm test -- --runInBand --watchman=false
 ```
 
-The ledger model and calculations live in `src/features/ledger/model.ts`. Screens and interactions live in `src/features/ledger/LedgerApp.tsx`; entry forms live in `LedgerForms.tsx`. MMKV stores an atomic ledger snapshot and pending change journal under `ledger.offline.v1`; existing `ledger.v1` data is migrated on first launch. Pull to refresh reloads the local snapshot. `src/services/api/client.ts` is ready for a future backend, but pending changes are not sent yet. There is no bank or mobile money connection, cloud sync, or automatic payment execution. The original reusable starter components and services remain in `src/` and are described in [`setup.md`](setup.md).
+The models, allocation logic, derived local balances, screens and MMKV persistence are in `src/features/contributions`. XAUI is configured at the application theme boundary and shared buttons wrap its Button component.
