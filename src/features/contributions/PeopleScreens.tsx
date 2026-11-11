@@ -1,13 +1,13 @@
-import React, { useContext, useState } from 'react'
-import { BottomSheetTextInput } from '@gorhom/bottom-sheet'
-import { Pressable, StyleSheet, TextInput, View } from 'react-native'
-import { AppScreen } from '../../components/layout/AppScreen'
-import { AppBottomSheet } from '../../components/overlays/AppBottomSheet'
-import { BottomSheetInputContext } from '../../components/overlays/BottomSheetInputContext'
-import { AppAvatar } from '../../components/ui/AppAvatar'
-import { AppButton } from '../../components/ui/AppButton'
-import { AppText } from '../../components/ui/AppText'
-import { useAppTheme } from '../../theme/theme'
+import React, { useContext, useState } from 'react';
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { AppScreen } from '../../components/layout/AppScreen';
+import { AppBottomSheet } from '../../components/overlays/AppBottomSheet';
+import { BottomSheetInputContext } from '../../components/overlays/BottomSheetInputContext';
+import { AppAvatar } from '../../components/ui/AppAvatar';
+import { AppButton } from '../../components/ui/AppButton';
+import { AppText } from '../../components/ui/AppText';
+import { useAppTheme } from '../../theme/theme';
 import {
   allocationPledges,
   balanceForPledge,
@@ -15,17 +15,17 @@ import {
   kampalaDate,
   newId,
   totalContributions,
-} from './model'
-import { rebuildAllocations } from './allocation'
-import type { Church, ContributionsData, Member } from './model'
+} from './model';
+import { rebuildAllocations } from './allocation';
+import type { Church, ContributionsData, Member } from './model';
 
 type Props = {
-  data: ContributionsData
-  onSaveMember: (member: Member) => void
-  onSaveChurch: (church: Church) => void
-  onAddPledge: (memberId?: string, projectId?: string) => void
-  onAddContribution: (memberId?: string) => void
-}
+  data: ContributionsData;
+  onSaveMember: (member: Member) => void;
+  onSaveChurch: (church: Church) => void;
+  onAddPledge: (memberId?: string, projectId?: string) => void;
+  onAddContribution: (memberId?: string) => void;
+};
 
 function Field({
   label,
@@ -34,15 +34,15 @@ function Field({
   placeholder,
   keyboardType,
 }: {
-  label: string
-  value: string
-  onChangeText: (value: string) => void
-  placeholder: string
-  keyboardType?: 'default' | 'phone-pad' | 'email-address'
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder: string;
+  keyboardType?: 'default' | 'phone-pad' | 'email-address';
 }) {
-  const { colors, radius } = useAppTheme()
-  const inSheet = useContext(BottomSheetInputContext)
-  const Input = inSheet ? BottomSheetTextInput : TextInput
+  const { colors, radius } = useAppTheme();
+  const inSheet = useContext(BottomSheetInputContext);
+  const Input = inSheet ? BottomSheetTextInput : TextInput;
   return (
     <View style={styles.field}>
       <AppText variant="label">{label}</AppText>
@@ -64,7 +64,7 @@ function Field({
         ]}
       />
     </View>
-  )
+  );
 }
 
 function Choice({
@@ -72,11 +72,11 @@ function Choice({
   selected,
   onPress,
 }: {
-  label: string
-  selected: boolean
-  onPress: () => void
+  label: string;
+  selected: boolean;
+  onPress: () => void;
 }) {
-  const { colors, radius } = useAppTheme()
+  const { colors, radius } = useAppTheme();
   return (
     <Pressable
       accessibilityRole="radio"
@@ -96,7 +96,7 @@ function Choice({
         {label}
       </AppText>
     </Pressable>
-  )
+  );
 }
 
 function Row({
@@ -105,12 +105,12 @@ function Row({
   detail,
   onPress,
 }: {
-  name: string
-  subtitle: string
-  detail?: string
-  onPress: () => void
+  name: string;
+  subtitle: string;
+  detail?: string;
+  onPress: () => void;
 }) {
-  const { colors, radius } = useAppTheme()
+  const { colors, radius } = useAppTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -147,11 +147,11 @@ function Row({
         </AppText>
       </View>
     </Pressable>
-  )
+  );
 }
 
 function Empty({ title, description }: { title: string; description: string }) {
-  const { colors, radius } = useAppTheme()
+  const { colors, radius } = useAppTheme();
   return (
     <View
       style={[
@@ -167,7 +167,7 @@ function Empty({ title, description }: { title: string; description: string }) {
         {description}
       </AppText>
     </View>
-  )
+  );
 }
 
 export function PeopleScreen({
@@ -176,95 +176,89 @@ export function PeopleScreen({
   onAddPledge,
   onAddContribution,
 }: Props) {
-  const { colors } = useAppTheme()
-  const [query, setQuery] = useState('')
-  const [showStatement, setShowStatement] = useState(false)
-  const [statementLimit, setStatementLimit] = useState(50)
-  const [detailId, setDetailId] = useState<string | null>(null)
-  const [editing, setEditing] = useState<Member | null>(null)
-  const [formOpen, setFormOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
-  const [gender, setGender] = useState<Member['gender']>()
-  const [joinedAt, setJoinedAt] = useState('')
-  const [churchIds, setChurchIds] = useState<string[]>([])
-  const [status, setStatus] = useState<'active' | 'inactive'>('active')
+  const { colors } = useAppTheme();
+  const [query, setQuery] = useState('');
+  const [showStatement, setShowStatement] = useState(false);
+  const [statementLimit, setStatementLimit] = useState(50);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Member | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState<Member['gender']>();
+  const [joinedAt, setJoinedAt] = useState('');
+  const [churchIds, setChurchIds] = useState<string[]>([]);
+  const [status, setStatus] = useState<'active' | 'inactive'>('active');
   const [memberFilter, setMemberFilter] = useState<
     'all' | 'active' | 'inactive' | 'debt' | 'advance'
-  >('all')
-  const [churchFilter, setChurchFilter] = useState<string | undefined>()
-  const [projectFilter, setProjectFilter] = useState<string | undefined>()
-  const [churchId, setChurchId] = useState<string | undefined>()
-  const [error, setError] = useState('')
-  const member = data.members.find(item => item.id === detailId)
+  >('all');
+  const [churchFilter, setChurchFilter] = useState<string | undefined>();
+  const [projectFilter, setProjectFilter] = useState<string | undefined>();
+  const [churchId, setChurchId] = useState<string | undefined>();
+  const [error, setError] = useState('');
+  const member = data.members.find(item => item.id === detailId);
   const filtered = data.members.filter(item => {
     if (
       !`${item.name} ${item.phone} ${item.email || ''}`
         .toLowerCase()
         .includes(query.trim().toLowerCase())
     )
-      return false
+      return false;
     if (
       churchFilter &&
       item.churchId !== churchFilter &&
       !item.churchIds?.includes(churchFilter)
     )
-      return false
-    const pledges = data.pledges.filter(pledge => pledge.memberId === item.id)
+      return false;
+    const pledges = data.pledges.filter(pledge => pledge.memberId === item.id);
     if (
       projectFilter &&
       !pledges.some(pledge => pledge.projectId === projectFilter)
     )
-      return false
-    if (memberFilter === 'active' && item.status === 'inactive') return false
-    if (memberFilter === 'inactive' && item.status !== 'inactive') return false
+      return false;
+    if (memberFilter === 'active' && item.status === 'inactive') return false;
+    if (memberFilter === 'inactive' && item.status !== 'inactive') return false;
     if (
       memberFilter === 'debt' &&
       !pledges.some(
         pledge => balanceForPledge(pledge, data.contributions).debt > 0,
       )
     )
-      return false
+      return false;
     if (
       memberFilter === 'advance' &&
       !pledges.some(
         pledge => balanceForPledge(pledge, data.contributions).advance > 0,
       )
     )
-      return false
-    return true
-  })
+      return false;
+    return true;
+  });
   function openForm(item?: Member) {
-    setEditing(item || null)
-    setName(item?.name || '')
-    setPhone(item?.phone || '')
-    setEmail(item?.email || '')
-    setGender(item?.gender)
-    setJoinedAt(item?.joinedAt || '')
-    setChurchIds(item?.churchIds || [])
-    setStatus(item?.status || 'active')
-    setChurchId(item?.churchId)
-    setError('')
-    setDetailId(null)
-    setFormOpen(true)
+    setEditing(item || null);
+    setName(item?.name || '');
+    setPhone(item?.phone || '');
+    setGender(item?.gender);
+    setJoinedAt(item?.joinedAt || '');
+    setChurchIds(item?.churchIds || []);
+    setStatus(item?.status || 'active');
+    setChurchId(item?.churchId);
+    setError('');
+    setDetailId(null);
+    setFormOpen(true);
   }
   function save() {
     if (!name.trim()) {
-      setError('Enter the member’s name.')
-      return
-    }
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError('Enter a valid email address.')
-      return
+      setError('Enter the member’s name.');
+      return;
     }
     if (joinedAt.trim()) {
-      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(joinedAt.trim())
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(joinedAt.trim());
       const date = match
         ? new Date(
             Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
           )
-        : null
+        : null;
       if (
         !match ||
         !date ||
@@ -272,12 +266,12 @@ export function PeopleScreen({
         date.getUTCMonth() !== Number(match[2]) - 1 ||
         date.getUTCDate() !== Number(match[3])
       ) {
-        setError('Enter a valid date joined in YYYY-MM-DD format.')
-        return
+        setError('Enter a valid date joined in YYYY-MM-DD format.');
+        return;
       }
     }
-    const normalizedPhone = phone.replace(/[^0-9+]/g, '')
-    const memberChurches = [churchId, ...churchIds].filter(Boolean)
+    const normalizedPhone = phone.replace(/[^0-9+]/g, '');
+    const memberChurches = [churchId, ...churchIds].filter(Boolean);
     if (
       normalizedPhone &&
       data.members.some(
@@ -291,37 +285,36 @@ export function PeopleScreen({
     ) {
       setError(
         'Another member of a selected church already has this phone number.',
-      )
-      return
+      );
+      return;
     }
     onSaveMember({
       ...editing,
       id: editing?.id || newId(),
       name: name.trim(),
       phone: phone.trim(),
-      email: email.trim() || undefined,
       gender,
       joinedAt: joinedAt.trim() || undefined,
       churchId,
       churchIds: churchIds.filter(id => id !== churchId),
       status,
-    })
-    setFormOpen(false)
+    });
+    setFormOpen(false);
   }
   const memberPledges = data.pledges.filter(
     item => item.memberId === member?.id,
-  )
+  );
   const memberPaid = member
     ? totalContributions(data.contributions, { memberId: member.id })
-    : 0
+    : 0;
   const debt = memberPledges.reduce(
     (sum, item) => sum + balanceForPledge(item, data.contributions).debt,
     0,
-  )
+  );
   const dueNow = memberPledges.reduce(
     (sum, item) => sum + balanceForPledge(item, data.contributions).dueNow,
     0,
-  )
+  );
   const unallocated = member
     ? data.contributions
         .filter(item => item.memberId === member.id && !item.voidedAt)
@@ -338,7 +331,7 @@ export function PeopleScreen({
             ),
           0,
         )
-    : 0
+    : 0;
   const statement =
     member && showStatement
       ? rebuildAllocations({
@@ -353,12 +346,12 @@ export function PeopleScreen({
           })),
           asOf: kampalaDate(),
         }).periods
-      : []
-  let runningBalance = 0
+      : [];
+  let runningBalance = 0;
   const advance = memberPledges.reduce(
     (sum, item) => sum + balanceForPledge(item, data.contributions).advance,
     0,
-  )
+  );
   return (
     <>
       <AppScreen
@@ -450,10 +443,10 @@ export function PeopleScreen({
         </View>
         <View style={styles.list}>
           {filtered.map(item => {
-            const church = data.churches.find(ch => ch.id === item.churchId)
+            const church = data.churches.find(ch => ch.id === item.churchId);
             const paid = totalContributions(data.contributions, {
               memberId: item.id,
-            })
+            });
             return (
               <Row
                 key={item.id}
@@ -464,7 +457,7 @@ export function PeopleScreen({
                 detail={formatUGX(paid)}
                 onPress={() => setDetailId(item.id)}
               />
-            )
+            );
           })}
           {filtered.length === 0 && (
             <Empty
@@ -502,13 +495,6 @@ export function PeopleScreen({
           onChangeText={setPhone}
           placeholder="e.g. 0700 000 000"
           keyboardType="phone-pad"
-        />
-        <Field
-          label="Email (optional)"
-          value={email}
-          onChangeText={setEmail}
-          placeholder="name@example.com"
-          keyboardType="email-address"
         />
         <Field
           label="Date joined (optional)"
@@ -673,8 +659,8 @@ export function PeopleScreen({
               <AppButton
                 title="Record gift"
                 onPress={() => {
-                  setDetailId(null)
-                  onAddContribution(member.id)
+                  setDetailId(null);
+                  onAddContribution(member.id);
                 }}
                 style={styles.flex}
               />
@@ -682,8 +668,8 @@ export function PeopleScreen({
                 title="Add pledge"
                 variant="outline"
                 onPress={() => {
-                  setDetailId(null)
-                  onAddPledge(member.id)
+                  setDetailId(null);
+                  onAddPledge(member.id);
                 }}
                 style={styles.flex}
               />
@@ -692,8 +678,8 @@ export function PeopleScreen({
               title={showStatement ? 'Hide statement' : 'View statement'}
               variant="secondary"
               onPress={() => {
-                setShowStatement(!showStatement)
-                setStatementLimit(50)
+                setShowStatement(!showStatement);
+                setStatementLimit(50);
               }}
             />
             {showStatement ? (
@@ -704,7 +690,7 @@ export function PeopleScreen({
                   includes future periods shown.
                 </AppText>
                 {statement.slice(0, statementLimit).map((period, index) => {
-                  runningBalance += period.amount - period.paid
+                  runningBalance += period.amount - period.paid;
                   return (
                     <View
                       key={`${period.pledgeId}-${period.periodStart}-${index}`}
@@ -721,7 +707,7 @@ export function PeopleScreen({
                         {formatUGX(runningBalance)}
                       </AppText>
                     </View>
-                  )
+                  );
                 })}
                 {!statement.length ? (
                   <AppText muted>No scheduled periods yet.</AppText>
@@ -745,7 +731,7 @@ export function PeopleScreen({
             </View>
             {memberPledges.length ? (
               memberPledges.map(pledge => {
-                const balance = balanceForPledge(pledge, data.contributions)
+                const balance = balanceForPledge(pledge, data.contributions);
                 return (
                   <View
                     key={pledge.id}
@@ -772,7 +758,7 @@ export function PeopleScreen({
                         : 'Up to date'}
                     </AppText>
                   </View>
-                )
+                );
               })
             ) : (
               <Empty
@@ -784,11 +770,11 @@ export function PeopleScreen({
         ) : null}
       </AppBottomSheet>
     </>
-  )
+  );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  const { colors, radius } = useAppTheme()
+  const { colors, radius } = useAppTheme();
   return (
     <View
       style={[
@@ -800,44 +786,44 @@ function Metric({ label, value }: { label: string; value: string }) {
       </AppText>
       <AppText variant="label">{value}</AppText>
     </View>
-  )
+  );
 }
 
 export function ChurchesScreen({ data, onSaveChurch, onSaveMember }: Props) {
-  const { colors } = useAppTheme()
-  const [query, setQuery] = useState('')
-  const [detailId, setDetailId] = useState<string | null>(null)
-  const [editing, setEditing] = useState<Church | null>(null)
-  const [formOpen, setFormOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [location, setLocation] = useState('')
-  const [contact, setContact] = useState('')
+  const { colors } = useAppTheme();
+  const [query, setQuery] = useState('');
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Church | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [location, setLocation] = useState('');
+  const [contact, setContact] = useState('');
   const [churchStatus, setChurchStatus] = useState<'active' | 'inactive'>(
     'active',
-  )
-  const [error, setError] = useState('')
-  const [assigning, setAssigning] = useState(false)
-  const [assignmentError, setAssignmentError] = useState('')
-  const church = data.churches.find(item => item.id === detailId)
+  );
+  const [error, setError] = useState('');
+  const [assigning, setAssigning] = useState(false);
+  const [assignmentError, setAssignmentError] = useState('');
+  const church = data.churches.find(item => item.id === detailId);
   const filtered = data.churches.filter(item =>
     `${item.name} ${item.location}`
       .toLowerCase()
       .includes(query.trim().toLowerCase()),
-  )
+  );
   function openForm(item?: Church) {
-    setEditing(item || null)
-    setName(item?.name || '')
-    setLocation(item?.location || '')
-    setContact(item?.contact || '')
-    setChurchStatus(item?.status || 'active')
-    setError('')
-    setDetailId(null)
-    setFormOpen(true)
+    setEditing(item || null);
+    setName(item?.name || '');
+    setLocation(item?.location || '');
+    setContact(item?.contact || '');
+    setChurchStatus(item?.status || 'active');
+    setError('');
+    setDetailId(null);
+    setFormOpen(true);
   }
   function save() {
     if (!name.trim()) {
-      setError('Enter the church name.')
-      return
+      setError('Enter the church name.');
+      return;
     }
     onSaveChurch({
       ...editing,
@@ -846,21 +832,21 @@ export function ChurchesScreen({ data, onSaveChurch, onSaveMember }: Props) {
       location: location.trim(),
       contact: contact.trim() || undefined,
       status: churchStatus,
-    })
-    setFormOpen(false)
+    });
+    setFormOpen(false);
   }
   const members = data.members.filter(
     item =>
       church &&
       (item.churchId === church.id || item.churchIds?.includes(church.id)),
-  )
+  );
   const total = church
     ? totalContributions(data.contributions, { churchId: church.id })
-    : 0
-  const homeMembers = data.members.filter(item => item.churchId === church?.id)
+    : 0;
+  const homeMembers = data.members.filter(item => item.churchId === church?.id);
   const homePledges = data.pledges.filter(item =>
     homeMembers.some(member => member.id === item.memberId),
-  )
+  );
   const debtByMember = homeMembers.map(member => ({
     id: member.id,
     debt: homePledges
@@ -869,22 +855,22 @@ export function ChurchesScreen({ data, onSaveChurch, onSaveMember }: Props) {
         (sum, item) => sum + balanceForPledge(item, data.contributions).debt,
         0,
       ),
-  }))
-  const totalDebt = debtByMember.reduce((sum, item) => sum + item.debt, 0)
-  const debtCount = debtByMember.filter(item => item.debt > 0).length
+  }));
+  const totalDebt = debtByMember.reduce((sum, item) => sum + item.debt, 0);
+  const debtCount = debtByMember.filter(item => item.debt > 0).length;
   const ownedProjects = data.projects.filter(
     item => church && item.ownerChurchId === church.id,
-  )
+  );
   const projectTotal = ownedProjects.reduce(
     (sum, item) =>
       sum + totalContributions(data.contributions, { projectId: item.id }),
     0,
-  )
+  );
   const projects = data.projects.filter(
     item =>
       church &&
       (item.ownerChurchId === church.id || item.churchIds.includes(church.id)),
-  )
+  );
   return (
     <>
       <AppScreen
@@ -918,7 +904,7 @@ export function ChurchesScreen({ data, onSaveChurch, onSaveMember }: Props) {
               member =>
                 member.churchId === item.id ||
                 member.churchIds?.includes(item.id),
-            ).length
+            ).length;
             return (
               <Row
                 key={item.id}
@@ -929,7 +915,7 @@ export function ChurchesScreen({ data, onSaveChurch, onSaveMember }: Props) {
                 detail={`${count} ${count === 1 ? 'member' : 'members'}`}
                 onPress={() => setDetailId(item.id)}
               />
-            )
+            );
           })}
           {filtered.length === 0 && (
             <Empty
@@ -999,9 +985,9 @@ export function ChurchesScreen({ data, onSaveChurch, onSaveMember }: Props) {
       <AppBottomSheet
         visible={!!church}
         onDismiss={() => {
-          setDetailId(null)
-          setAssigning(false)
-          setAssignmentError('')
+          setDetailId(null);
+          setAssigning(false);
+          setAssignmentError('');
         }}
         title={church?.name}
         scrollable>
@@ -1070,9 +1056,9 @@ export function ChurchesScreen({ data, onSaveChurch, onSaveMember }: Props) {
                         !!item.churchIds?.includes(church.id)
                       }
                       onPress={() => {
-                        setAssignmentError('')
-                        const links = item.churchIds || []
-                        const phoneNumber = item.phone.replace(/[^0-9+]/g, '')
+                        setAssignmentError('');
+                        const links = item.churchIds || [];
+                        const phoneNumber = item.phone.replace(/[^0-9+]/g, '');
                         if (
                           item.churchId !== church.id &&
                           !links.includes(church.id) &&
@@ -1088,19 +1074,19 @@ export function ChurchesScreen({ data, onSaveChurch, onSaveMember }: Props) {
                         ) {
                           setAssignmentError(
                             'Another member of this church already has this phone number.',
-                          )
-                          return
+                          );
+                          return;
                         }
                         if (item.churchId === church.id) {
-                          onSaveMember({ ...item, churchId: undefined })
-                          return
+                          onSaveMember({ ...item, churchId: undefined });
+                          return;
                         }
                         onSaveMember({
                           ...item,
                           churchIds: links.includes(church.id)
                             ? links.filter(id => id !== church.id)
                             : [...links, church.id],
-                        })
+                        });
                       }}
                     />
                   ))}
@@ -1160,7 +1146,7 @@ export function ChurchesScreen({ data, onSaveChurch, onSaveMember }: Props) {
         ) : null}
       </AppBottomSheet>
     </>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -1203,4 +1189,4 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 4,
   },
-})
+});
