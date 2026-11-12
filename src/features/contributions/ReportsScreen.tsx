@@ -82,7 +82,12 @@ export function ReportsScreen({
           if (payment.voidedAt || paidAt < range.start || paidAt > range.end)
             return result;
           if (memberId && payment.memberId !== memberId) return result;
-          if (churchId && payment.churchId !== churchId) return result;
+          if (
+            churchId &&
+            data.members.find(member => member.id === payment.memberId)
+              ?.churchId !== churchId
+          )
+            return result;
           const amount = projectId
             ? projectAmount(payment, projectId)
             : payment.amount;
@@ -94,7 +99,15 @@ export function ReportsScreen({
             b.payment.paidAt.localeCompare(a.payment.paidAt) ||
             b.payment.id.localeCompare(a.payment.id),
         ),
-    [data.contributions, range.start, range.end, memberId, churchId, projectId],
+    [
+      data.contributions,
+      data.members,
+      range.start,
+      range.end,
+      memberId,
+      churchId,
+      projectId,
+    ],
   );
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const closeRange = () => {
@@ -148,7 +161,7 @@ export function ReportsScreen({
       </View>
       {data.churches.length ? (
         <Filter
-          label="Home church at payment"
+          label="Current home church"
           options={data.churches}
           selected={churchId}
           onSelect={setChurchId}
@@ -246,8 +259,12 @@ export function ReportsScreen({
                   <AppText variant="caption" muted>
                     {item.payment.paidAt.slice(0, 10)} ·{' '}
                     {data.churches.find(
-                      church => church.id === item.payment.churchId,
-                    )?.name ?? 'No church recorded'}
+                      church =>
+                        church.id ===
+                        data.members.find(
+                          member => member.id === item.payment.memberId,
+                        )?.churchId,
+                    )?.name ?? 'No current home church'}
                   </AppText>
                 </View>
                 <AppText variant="label">{formatUGX(item.amount)}</AppText>

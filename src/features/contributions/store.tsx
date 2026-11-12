@@ -4,130 +4,133 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
-} from 'react'
-import { AppState } from 'react-native'
-import { usePersistedState } from '../../hooks/usePersistedState'
-import { preferences } from '../../services/storage/mmkv'
-import { ContributionsData, EMPTY_DATA, kampalaDate } from './model'
-import { allocateData } from './derived'
+} from 'react';
+import { useAuth } from '../auth/AuthProvider';
+import { ContributionsData, EMPTY_DATA } from './model';
+import {
+  loadContributions,
+  previewPayment as requestPaymentPreview,
+  saveContributionChange,
+} from './api';
+import type { PaymentPreview, PreviewInput } from './api';
+import { createMutationKeys, UncertainMutationError } from './mutationKeys';
+import { ApiError } from '../../services/api/client';
 
-type Update = React.SetStateAction<ContributionsData>
+type Update = React.SetStateAction<ContributionsData>;
 type ContributionsContextValue = {
-  data: ContributionsData
-  setData: (update: Update) => void
-}
-
+  data: ContributionsData;
+  setData: (update: Update) => Promise<void>;
+  loading: boolean;
+  saving: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+  previewPayment: (input: PreviewInput) => Promise<PaymentPreview>;
+};
 const ContributionsContext = createContext<ContributionsContextValue | null>(
   null,
-)
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function hasStrings(value: Record<string, unknown>, keys: string[]) {
-  return keys.every(key => typeof value[key] === 'string')
-}
-
-/** Keep a damaged or older local value from crashing the whole app at startup. */
-export function readContributions(value: unknown): ContributionsData {
-  if (!isRecord(value)) return EMPTY_DATA
-  const records = (
-    key: string,
-    valid: (item: Record<string, unknown>) => boolean,
-  ) =>
-    Array.isArray(value[key])
-      ? value[key].filter((item: unknown) => isRecord(item) && valid(item))
-      : []
-  return {
-    churches: records('churches', item =>
-      hasStrings(item, ['id', 'name', 'location']),
-    ) as ContributionsData['churches'],
-    members: records(
-      'members',
-      item =>
-        hasStrings(item, ['id', 'name', 'phone']) &&
-        (item.churchId === undefined || typeof item.churchId === 'string'),
-    ) as ContributionsData['members'],
-    projects: records(
-      'projects',
-      item =>
-        hasStrings(item, ['id', 'name', 'description']) &&
-        typeof item.targetAmount === 'number' &&
-        Number.isFinite(item.targetAmount) &&
-        Array.isArray(item.churchIds) &&
-        item.churchIds.every(id => typeof id === 'string'),
-    ) as ContributionsData['projects'],
-    pledges: records(
-      'pledges',
-      item =>
-        hasStrings(item, ['id', 'memberId', 'projectId', 'startDate']) &&
-        typeof item.amount === 'number' &&
-        Number.isFinite(item.amount) &&
-        (item.frequency === 'daily' ||
-          item.frequency === 'weekly' ||
-          item.frequency === 'monthly'),
-    ) as ContributionsData['pledges'],
-    contributions: records(
-      'contributions',
-      item =>
-        hasStrings(item, ['id', 'memberId', 'paidAt']) &&
-        typeof item.amount === 'number' &&
-        Number.isFinite(item.amount) &&
-        (item.churchId === undefined || typeof item.churchId === 'string'),
-    ) as ContributionsData['contributions'],
-  }
-}
+);
 
 export function ContributionsProvider({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const [stored, setStored] = usePersistedState<unknown>(
-    preferences,
-    'contributions-v1',
-    EMPTY_DATA,
-  )
-  const [today, setToday] = useState(kampalaDate)
-  useEffect(() => {
-    const refresh = () => setToday(kampalaDate())
-    const timer = setInterval(refresh, 60000)
-    const subscription = AppState.addEventListener('change', state => {
-      if (state === 'active') refresh()
-    })
-    return () => {
-      clearInterval(timer)
-      subscription.remove()
+  const { api } = useAuth();
+  const [data, setLocalData] = useState<ContributionsData>(EMPTY_DATA);
+  const dataRef = useRef(data);
+  const savingRef = useRef(false);
+  const mutationKeys = useRef(createMutationKeys()).current;
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const refresh = useCallback(async () => {
+    try {
+      const result = await loadContributions(api);
+      dataRef.current = result;
+      setLocalData(result);
+      setError(null);
+    } catch (failure) {
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : 'Unable to load contributions.',
+      );
+      throw failure;
+    } finally {
+      setLoading(false);
     }
-  }, [])
-  const data = useMemo(
-    () => allocateData(readContributions(stored), today),
-    [stored, today],
-  )
+  }, [api]);
+  useEffect(() => {
+    refresh().catch(() => undefined);
+  }, [refresh]);
   const setData = useCallback(
-    (update: Update) => {
-      setStored((current: unknown) => {
-        const safe = readContributions(current)
-        return typeof update === 'function' ? update(safe) : update
-      })
+    async (update: Update) => {
+      if (savingRef.current)
+        throw new Error('Please wait for the current change to finish.');
+      savingRef.current = true;
+      setSaving(true);
+      try {
+        const current = dataRef.current;
+        const next = typeof update === 'function' ? update(current) : update;
+        try {
+          await saveContributionChange(api, current, next, mutationKeys);
+        } catch (failure) {
+          if (
+            (failure instanceof ApiError && failure.status === 412) ||
+            failure instanceof UncertainMutationError
+          ) {
+            try {
+              await refresh();
+            } catch {
+              throw new Error(
+                'Could not reload the record. Check your connection and try again.',
+              );
+            }
+            if (failure instanceof UncertainMutationError) {
+              throw new Error(
+                'The result is uncertain. Close this form and check the refreshed record before trying again.',
+              );
+            }
+            throw new Error(
+              'This record changed. Close this form and reopen it to review the latest data.',
+            );
+          }
+          throw failure;
+        }
+        // A committed write must never be retried just because the following read failed.
+        try {
+          await refresh();
+        } catch {
+          /* refresh exposes its error for retry */
+        }
+      } finally {
+        savingRef.current = false;
+        setSaving(false);
+      }
     },
-    [setStored],
-  )
-  const value = useMemo(() => ({ data, setData }), [data, setData])
+    [api, refresh, mutationKeys],
+  );
+  const previewPayment = useCallback(
+    (input: PreviewInput) => requestPaymentPreview(api, input),
+    [api],
+  );
+  const value = useMemo(
+    () => ({ data, setData, loading, saving, error, refresh, previewPayment }),
+    [data, setData, loading, saving, error, refresh, previewPayment],
+  );
   return (
     <ContributionsContext.Provider value={value}>
       {children}
     </ContributionsContext.Provider>
-  )
+  );
 }
-
 export function useContributions() {
-  const value = useContext(ContributionsContext)
+  const value = useContext(ContributionsContext);
   if (!value)
     throw new Error(
       'useContributions must be used within ContributionsProvider',
-    )
-  return value
+    );
+  return value;
 }

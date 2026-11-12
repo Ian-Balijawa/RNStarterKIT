@@ -12,6 +12,16 @@ export class ApiError extends Error {
   }
 }
 
+function errorMessage(body: unknown, status: number): string {
+  if (body && typeof body === 'object') {
+    const error = body as { detail?: unknown; message?: unknown };
+    if (typeof error.detail === 'string' && error.detail) return error.detail;
+    if (typeof error.message === 'string' && error.message)
+      return error.message;
+  }
+  return status ? `Request failed (${status})` : 'Network unavailable';
+}
+
 export type ApiClient = {
   request: <T>(path: string, init?: RequestInit) => Promise<T>;
 };
@@ -19,6 +29,7 @@ export type ApiClient = {
 type Options = {
   baseUrl: string;
   getToken?: () => string | null | Promise<string | null>;
+  getCsrfToken?: () => string | null;
   onUnauthorized?: () => void;
   timeoutMs?: number;
   axiosInstance?: AxiosInstance;
@@ -29,6 +40,7 @@ type Options = {
 export function createApiClient({
   baseUrl,
   getToken,
+  getCsrfToken,
   onUnauthorized,
   timeoutMs = 15000,
   axiosInstance,
@@ -39,6 +51,7 @@ export function createApiClient({
     axios.create({
       baseURL: `${baseUrl.replace(/\/$/, '')}/`,
       timeout: timeoutMs,
+      withCredentials: true,
     });
   return {
     async request<T>(path: string, init: RequestInit = {}) {
@@ -52,26 +65,30 @@ export function createApiClient({
       ) {
         headers.set('Content-Type', 'application/json');
       }
+      const method = (init.method ?? 'GET').toUpperCase();
+      const csrfToken = getCsrfToken?.();
+      if (csrfToken && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+        headers.set('x-csrf-token', csrfToken);
+      }
       const relativePath = path.replace(/^\//, '');
       if (fetchImpl) {
         const response = await fetchImpl(
           `${baseUrl.replace(/\/$/, '')}/${relativePath}`,
-          { ...init, headers },
+          { ...init, headers, credentials: 'include' },
         );
         if (response.status === 401) onUnauthorized?.();
         const contentType = response.headers.get('Content-Type') || '';
         const body =
           response.status === 204
             ? undefined
-            : contentType.includes('application/json')
+            : contentType.includes('application/json') ||
+              contentType.includes('+json')
             ? await response.json()
             : await response.text();
         if (!response.ok) {
           throw new ApiError(
             response.status,
-            typeof body === 'object' && body && 'message' in body
-              ? String(body.message)
-              : `Request failed (${response.status})`,
+            errorMessage(body, response.status),
             body,
           );
         }
@@ -80,7 +97,8 @@ export function createApiClient({
       try {
         const response = await client.request<T>({
           url: relativePath,
-          method: init.method ?? 'GET',
+          method,
+          withCredentials: true,
           headers: Object.fromEntries(headers.entries()),
           data: init.body,
           signal: init.signal ?? undefined,
@@ -88,13 +106,12 @@ export function createApiClient({
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          const failure = error as AxiosError<{ message?: string }>;
+          const failure = error as AxiosError;
           const status = failure.response?.status ?? 0;
           if (status === 401) onUnauthorized?.();
           throw new ApiError(
             status,
-            failure.response?.data?.message ??
-              (status ? `Request failed (${status})` : 'Network unavailable'),
+            errorMessage(failure.response?.data, status),
             failure.response?.data,
             !failure.response,
           );

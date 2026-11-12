@@ -34,6 +34,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Connect to your contributions server on the local network.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Allow location access to show your position on the map when you choose to use it.</string>
 	<key>NSFaceIDUsageDescription</key>

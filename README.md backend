@@ -1,0 +1,30 @@
+# Masiya Contributions API
+
+Axum and MySQL API for church member contributions. The active Rust code provides cookie and CSRF authentication, churches, members, projects, pledges, payments, payment preview and void, dashboard, notifications, and profile. Money is stored as integer UGX. The server recalculates allocations after payment creation or void; payments are immutable.
+
+## Local setup
+
+1. Create a MySQL 8 database and set `DATABASE_URL` and `MIGRATION_DATABASE_URL` in `.env` (see `.env.example`). Existing `.env` values are not overwritten.
+2. Set `BOOTSTRAP_ADMIN_PHONE` in E.164 format (for example, `+256700000000`) and a unique `BOOTSTRAP_ADMIN_PASSWORD` of at least 12 characters for first run. These are ignored after the first user exists.
+3. Run `make migrate`, then `make run`.
+4. Run the frontend with `pnpm dev`. Set `CORS_ALLOWED_ORIGINS` to a comma-separated list of allowed origins, such as `http://localhost:3000,http://localhost:5173,http://localhost:5174`. For local HTTP set `COOKIE_SECURE=false`; use secure cookies under HTTPS in deployment.
+
+The API is at `http://127.0.0.1:8000/api/v1`. `GET /api/v1/health` probes the database; `GET /api/v1/openapi.json` publishes the current core schema. Use `make test` for unit tests and `make test-integration` with a disposable `TEST_DATABASE_URL` for the contribution flow.
+
+Sign in with `POST /api/v1/auth/login` using `{ "phone": "+256700000000", "password": "..." }` after obtaining a CSRF token from `GET /api/v1/auth/csrf`. Phone values for users and members are required; new or edited values use E.164 format. An organization administrator can create another administrator with `POST /api/v1/admin-users` and `{ "name": "...", "phone": "+256...", "password": "..." }`. This endpoint requires the session cookie and `x-csrf-token`. Passwords must be 12–128 bytes and are stored as Argon2 hashes.
+
+Before running the phone identity migration on an existing database, fill missing user and member phones with their real numbers. User phones must be unique across organizations. The migration removes email columns from the active tables and the unused historical `user` table.
+
+## Source layout
+
+`src/main.rs` starts the server. `src/api/config.rs` reads server settings and builds the CORS layer; `src/api/routes.rs` composes public and protected Axum routes. Protected routes share session and CSRF middleware in `src/api/middleware.rs`. Request DTOs, response envelopes, errors, and validation helpers live in their own modules. Record reads, writes, payment accounting, and idempotency are separate modules under `src/api/`; `src/domain.rs` contains the allocation rules. Add endpoints through the relevant handler module and register them in `routes.rs`.
+
+Church, member, project, pledge and payment creation, plus payment void, use a 30-day per-user idempotency record. Reuse the same UUID key and request body when retrying. A changed body with the same key receives `409 idempotency_key_reused`. The domain write, audit row and reservation commit together. The response snapshot is finalized immediately after commit; a retry during that brief window reconstructs it from the committed record.
+
+## Existing database history
+
+Historical migrations remain so SQLx can validate databases that applied them. The new application uses only `masiya_*` tables. No old ledger route or source module is loaded. Review data retention before removing historical starter tables. The legacy deploy scripts and renderer have not been adapted to this API; use the commands above for local development.
+
+## Contract coverage
+
+`API-CONTRACT.md` is the proposed v1 target. The current implementation covers the core record and accounting flow; other planned endpoints and lifecycle rules are not yet available. The OpenAPI file describes the implemented core surface only.

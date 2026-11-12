@@ -1,24 +1,24 @@
-import React, { useMemo, useState } from 'react'
-import { Animated, ScrollView, StyleSheet, View } from 'react-native'
-import { AppScreen } from '../../components/layout/AppScreen'
-import { AppBottomSheet } from '../../components/overlays/AppBottomSheet'
-import { SheetField } from '../../components/forms/SheetField'
-import { AppButton } from '../../components/ui/AppButton'
-import { AppCard } from '../../components/ui/AppCard'
-import { AppChip } from '../../components/ui/AppChip'
-import { AppText } from '../../components/ui/AppText'
-import { useAppTheme } from '../../theme/theme'
-import { formatUGX, inPeriod } from './model'
-import type { Contribution, ContributionsData } from './model'
+import React, { useMemo, useState } from 'react';
+import { Animated, ScrollView, StyleSheet, View } from 'react-native';
+import { AppScreen } from '../../components/layout/AppScreen';
+import { AppBottomSheet } from '../../components/overlays/AppBottomSheet';
+import { SheetField } from '../../components/forms/SheetField';
+import { AppButton } from '../../components/ui/AppButton';
+import { AppCard } from '../../components/ui/AppCard';
+import { AppChip } from '../../components/ui/AppChip';
+import { AppText } from '../../components/ui/AppText';
+import { useAppTheme } from '../../theme/theme';
+import { formatUGX, inPeriod } from './model';
+import type { Contribution, ContributionsData } from './model';
 
 type Props = {
-  data: ContributionsData
-  onAddContribution: () => void
-  onReports: () => void
-  onVoid: (paymentId: string, reason: string) => void
-}
-type StatusFilter = 'active' | 'voided' | 'all'
-type DateFilter = 'all' | 'weekly' | 'monthly'
+  data: ContributionsData;
+  onAddContribution: () => void;
+  onReports: () => void;
+  onVoid: (paymentId: string, reason: string) => void | Promise<void>;
+};
+type StatusFilter = 'active' | 'voided' | 'all';
+type DateFilter = 'all' | 'weekly' | 'monthly';
 
 /** Payment history keeps voided entries visible for audit and correction. */
 export function PaymentsScreen({
@@ -27,27 +27,28 @@ export function PaymentsScreen({
   onReports,
   onVoid,
 }: Props) {
-  const { colors, radius } = useAppTheme()
-  const [status, setStatus] = useState<StatusFilter>('active')
-  const [period, setPeriod] = useState<DateFilter>('all')
-  const [projectId, setProjectId] = useState<string | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [voiding, setVoiding] = useState(false)
-  const [reason, setReason] = useState('')
-  const [error, setError] = useState('')
-  const selected = data.contributions.find(item => item.id === selectedId)
+  const { colors, radius } = useAppTheme();
+  const [status, setStatus] = useState<StatusFilter>('active');
+  const [period, setPeriod] = useState<DateFilter>('all');
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [voiding, setVoiding] = useState(false);
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const selected = data.contributions.find(item => item.id === selectedId);
   const memberName = (item: Contribution) =>
-    data.members.find(member => member.id === item.memberId)?.name ?? 'Member'
+    data.members.find(member => member.id === item.memberId)?.name ?? 'Member';
   const projectName = (item: Contribution) =>
     data.projects.find(project => project.id === item.projectId)?.name ??
-    (item.projectId ? 'Project' : 'Across projects')
+    (item.projectId ? 'Project' : 'Across projects');
   const filtered = useMemo(
     () =>
       data.contributions
         .filter(item => {
-          if (status === 'active' && item.voidedAt) return false
-          if (status === 'voided' && !item.voidedAt) return false
-          if (period !== 'all' && !inPeriod(item.paidAt, period)) return false
+          if (status === 'active' && item.voidedAt) return false;
+          if (status === 'voided' && !item.voidedAt) return false;
+          if (period !== 'all' && !inPeriod(item.paidAt, period)) return false;
           if (
             projectId &&
             item.projectId !== projectId &&
@@ -55,8 +56,8 @@ export function PaymentsScreen({
               allocation => allocation.projectId === projectId,
             )
           )
-            return false
-          return true
+            return false;
+          return true;
         })
         .slice()
         .sort(
@@ -64,26 +65,38 @@ export function PaymentsScreen({
             b.paidAt.localeCompare(a.paidAt) || b.id.localeCompare(a.id),
         ),
     [data.contributions, status, period, projectId],
-  )
+  );
   const close = () => {
-    setSelectedId(null)
-    setVoiding(false)
-    setReason('')
-    setError('')
-  }
-  const confirmVoid = () => {
-    const trimmed = reason.trim()
+    setSelectedId(null);
+    setVoiding(false);
+    setReason('');
+    setError('');
+  };
+  const confirmVoid = async () => {
+    if (saving) return;
+    const trimmed = reason.trim();
     if (!trimmed) {
-      setError('Enter a reason to void this payment.')
-      return
+      setError('Enter a reason to void this payment.');
+      return;
     }
     if (selected && !selected.voidedAt) {
-      onVoid(selected.id, trimmed)
-      setVoiding(false)
-      setReason('')
-      setError('')
+      setSaving(true);
+      try {
+        await onVoid(selected.id, trimmed);
+        setVoiding(false);
+        setReason('');
+        setError('');
+      } catch (failure) {
+        setError(
+          failure instanceof Error
+            ? failure.message
+            : 'Could not void the payment.',
+        );
+      } finally {
+        setSaving(false);
+      }
     }
-  }
+  };
   const header = (expandedHeader: React.ReactNode) => (
     <View style={styles.header}>
       {expandedHeader}
@@ -156,7 +169,7 @@ export function PaymentsScreen({
         </AppText>
       </View>
     </View>
-  )
+  );
   return (
     <>
       <AppScreen
@@ -237,6 +250,8 @@ export function PaymentsScreen({
               title="Confirm void"
               variant="danger"
               onPress={confirmVoid}
+              loading={saving}
+              disabled={saving}
             />
           ) : undefined
         }>
@@ -333,8 +348,8 @@ export function PaymentsScreen({
                   label="Reason for voiding"
                   value={reason}
                   onChangeText={value => {
-                    setReason(value)
-                    setError('')
+                    setReason(value);
+                    setError('');
                   }}
                   placeholder="Explain what needs correcting"
                   multiline
@@ -348,8 +363,8 @@ export function PaymentsScreen({
                   title="Keep payment"
                   variant="ghost"
                   onPress={() => {
-                    setVoiding(false)
-                    setError('')
+                    setVoiding(false);
+                    setError('');
                   }}
                 />
               </>
@@ -364,11 +379,11 @@ export function PaymentsScreen({
         ) : null}
       </AppBottomSheet>
     </>
-  )
+  );
 }
 
 function Separator() {
-  return <View style={styles.separator} />
+  return <View style={styles.separator} />;
 }
 
 function Detail({ label, value }: { label: string; value: string }) {
@@ -379,7 +394,7 @@ function Detail({ label, value }: { label: string; value: string }) {
       </AppText>
       <AppText variant="label">{value}</AppText>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -415,4 +430,4 @@ const styles = StyleSheet.create({
   detail: { gap: 3 },
   allocations: { gap: 12 },
   allocationRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-})
+});

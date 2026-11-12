@@ -1,78 +1,113 @@
-import React from 'react'
-import { StyleSheet, View } from 'react-native'
-import { Button, AppText, AppScreen } from '../../ui'
-import { useAppTheme } from '../../theme/theme'
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Button, AppText, AppScreen } from '../../ui';
+import { useAppTheme } from '../../theme/theme';
+import { useAuth } from '../auth/AuthProvider';
+import {
+  AppErrorState,
+  AppLoadingState,
+} from '../../components/feedback/AppStates';
 import {
   balanceForPledge,
   ContributionsData,
   formatUGX,
-  kampalaDate,
   totalContributions,
-} from './model'
+} from './model';
+
+type Dashboard = {
+  week: { collected: number };
+  month: { collected: number };
+  topDebtors: {
+    id: string;
+    name: string;
+    debt: number;
+    homeChurchId: string;
+  }[];
+  advanceMembers: {
+    id: string;
+    name: string;
+    advance: number;
+    homeChurchId: string;
+  }[];
+  behindTargetProjects: { id: string; collected: number }[];
+  recentPayments: { id: string }[];
+};
 
 type Props = {
-  data: ContributionsData
-  onContribution: () => void
-  onProjects: () => void
-}
+  data: ContributionsData;
+  onContribution: () => void;
+  onProjects: () => void;
+};
 export function DashboardScreen({ data, onContribution, onProjects }: Props) {
-  const { colors } = useAppTheme()
-  const total = totalContributions(data.contributions)
-  const week = totalContributions(data.contributions, { period: 'weekly' })
-  const month = totalContributions(data.contributions, { period: 'monthly' })
+  const { colors } = useAppTheme();
+  const { api } = useAuth();
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const result = await api.request<{ data: Dashboard }>('/dashboard');
+      setDashboard(result.data);
+    } catch (failure) {
+      setDashboard(null);
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : 'Unable to load the overview.',
+      );
+    }
+  }, [api]);
+  useEffect(() => {
+    load();
+  }, [load, data]);
+  const total = totalContributions(data.contributions);
+  const week = dashboard?.week.collected ?? 0;
+  const month = dashboard?.month.collected ?? 0;
   const balances = data.pledges.map(pledge => ({
     pledge,
     balance: balanceForPledge(pledge, data.contributions),
-  }))
-  const debt = balances.reduce((sum, item) => sum + item.balance.debt, 0)
-  const dueNow = balances.reduce((sum, item) => sum + item.balance.dueNow, 0)
-  const memberBalances = data.members.map(member => {
-    const own = balances.filter(item => item.pledge.memberId === member.id)
-    return {
-      member,
-      debt: own.reduce((sum, item) => sum + item.balance.debt, 0),
-      advance: own.reduce((sum, item) => sum + item.balance.advance, 0),
-    }
-  })
-  const debtors = memberBalances
-    .filter(item => item.debt > 0)
-    .sort((a, b) => b.debt - a.debt)
-    .slice(0, 5)
-  const ahead = memberBalances
-    .filter(item => item.advance > 0)
-    .sort((a, b) => b.advance - a.advance)
-    .slice(0, 5)
-  const today = kampalaDate()
-  const behind = data.projects
-    .filter(project => {
-      if (
-        !project.targetAmount ||
-        !project.startDate ||
-        !project.endDate ||
-        project.status === 'completed' ||
-        project.status === 'cancelled' ||
-        today < project.startDate
-      )
-        return false
-      const start = Date.parse(`${project.startDate}T00:00:00Z`)
-      const end = Date.parse(`${project.endDate}T00:00:00Z`)
-      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start)
-        return false
-      const now = Date.parse(`${today}T00:00:00Z`)
-      const elapsed = Math.max(0, Math.min(1, (now - start) / (end - start)))
-      const raised = totalContributions(data.contributions, {
-        projectId: project.id,
-      })
-      return raised / project.targetAmount < elapsed
-    })
-    .map(project => ({
-      project,
-      raised: totalContributions(data.contributions, { projectId: project.id }),
+  }));
+  const debt = balances.reduce((sum, item) => sum + item.balance.debt, 0);
+  const dueNow = balances.reduce((sum, item) => sum + item.balance.dueNow, 0);
+  const debtors = (dashboard?.topDebtors ?? []).map(item => ({
+    member: data.members.find(member => member.id === item.id) ?? item,
+    debt: item.debt,
+    churchId: item.homeChurchId,
+  }));
+  const ahead = (dashboard?.advanceMembers ?? []).map(item => ({
+    member: data.members.find(member => member.id === item.id) ?? item,
+    advance: item.advance,
+    churchId: item.homeChurchId,
+  }));
+  const behind = (dashboard?.behindTargetProjects ?? [])
+    .map(item => ({
+      project: data.projects.find(project => project.id === item.id),
+      raised: item.collected,
     }))
+    .filter(
+      (
+        item,
+      ): item is {
+        project: ContributionsData['projects'][number];
+        raised: number;
+      } => !!item.project,
+    );
+  const recentIds = new Set(
+    (dashboard?.recentPayments ?? []).map(item => item.id),
+  );
   const recent = data.contributions
-    .filter(item => !item.voidedAt)
-    .sort((a, b) => b.paidAt.localeCompare(a.paidAt))
-    .slice(0, 4)
+    .filter(item => recentIds.has(item.id))
+    .sort((a, b) => b.paidAt.localeCompare(a.paidAt));
+  if (!dashboard)
+    return error ? (
+      <AppErrorState
+        title="Could not load the overview"
+        message={error}
+        onRetry={load}
+      />
+    ) : (
+      <AppLoadingState label="Loading overview..." fullScreen />
+    );
   return (
     <AppScreen
       scroll
@@ -194,9 +229,8 @@ export function DashboardScreen({ data, onContribution, onProjects }: Props) {
               <View style={styles.rowText}>
                 <AppText variant="label">{item.member.name}</AppText>
                 <AppText variant="caption" muted>
-                  {data.churches.find(
-                    church => church.id === item.member.churchId,
-                  )?.name || 'No home church'}
+                  {data.churches.find(church => church.id === item.churchId)
+                    ?.name || 'No home church'}
                 </AppText>
               </View>
               <AppText variant="label" style={{ color: colors.danger }}>
@@ -235,9 +269,8 @@ export function DashboardScreen({ data, onContribution, onProjects }: Props) {
               <View style={styles.rowText}>
                 <AppText variant="label">{item.member.name}</AppText>
                 <AppText variant="caption" muted>
-                  {data.churches.find(
-                    church => church.id === item.member.churchId,
-                  )?.name || 'No home church'}
+                  {data.churches.find(church => church.id === item.churchId)
+                    ?.name || 'No home church'}
                 </AppText>
               </View>
               <AppText variant="label" style={{ color: colors.success }}>
@@ -254,7 +287,7 @@ export function DashboardScreen({ data, onContribution, onProjects }: Props) {
       <View style={styles.sectionHeading}>
         <AppText variant="heading">Projects behind target</AppText>
         <AppText variant="caption" muted>
-          Compared with elapsed time between project dates
+          Projects identified by the server
         </AppText>
       </View>
       {behind.length ? (
@@ -361,7 +394,7 @@ export function DashboardScreen({ data, onContribution, onProjects }: Props) {
         </View>
       )}
     </AppScreen>
-  )
+  );
 }
 const styles = StyleSheet.create({
   content: {
@@ -432,4 +465,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowText: { flex: 1, gap: 2 },
-})
+});

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BackHandler, StatusBar, StyleSheet } from 'react-native';
+import { BackHandler, StatusBar, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -25,6 +25,15 @@ import {
   ProjectsScreen,
 } from './src/features/contributions/ProjectScreens';
 import { Church, Member } from './src/features/contributions/model';
+import { AuthProvider, useAuth } from './src/features/auth/AuthProvider';
+import { AuthGate } from './src/features/auth/AuthGate';
+import { AppScreen } from './src/components/layout/AppScreen';
+import { AppText } from './src/components/ui/AppText';
+import { AppButton } from './src/components/ui/AppButton';
+import {
+  AppErrorState,
+  AppLoadingState,
+} from './src/components/feedback/AppStates';
 
 const Tabs = createBottomTabNavigator();
 function TabIcon({ name, color }: { name: string; color: string }) {
@@ -60,6 +69,12 @@ function TabIcon({ name, color }: { name: string; color: string }) {
           <Path d="M3 7h18v12H3zM3 10h18M7 15h4" />
         </>
       ) : null}
+      {name === 'Account' ? (
+        <>
+          <Circle cx={12} cy={8} r={4} />
+          <Path d="M4 21a8 8 0 0 1 16 0" />
+        </>
+      ) : null}
       {name === 'Churches' ? (
         <>
           <Path d="M12 2v6M9 5h6M3 21h18M5 21V11l7-4 7 4v10M10 21v-5h4v5" />
@@ -70,9 +85,12 @@ function TabIcon({ name, color }: { name: string; color: string }) {
 }
 function Main() {
   const { colors, dark } = useAppTheme();
-  const { data, setData } = useContributions();
+  const { signOut } = useAuth();
+  const { data, setData, loading, error, refresh, previewPayment } =
+    useContributions();
   const [flow, setFlow] = useState<ContributionFlow>(null);
   const [showReports, setShowReports] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   useEffect(() => {
     if (!showReports) return;
     const subscription = BackHandler.addEventListener(
@@ -102,6 +120,36 @@ function Main() {
         ? current.churches.map(item => (item.id === church.id ? church : item))
         : [...current.churches, church],
     }));
+  if (loading)
+    return <AppLoadingState label="Loading contributions..." fullScreen />;
+  if (error)
+    return (
+      <View style={styles.center}>
+        <AppErrorState
+          title="Could not load contributions"
+          message={error}
+          onRetry={() => {
+            refresh().catch(() => undefined);
+          }}
+        />
+        {signOutError ? (
+          <AppText accessibilityRole="alert" style={styles.centerText}>
+            {signOutError}
+          </AppText>
+        ) : null}
+        <AppButton
+          title="Sign out"
+          variant="ghost"
+          onPress={() => {
+            signOut().catch(err =>
+              setSignOutError(
+                err instanceof Error ? err.message : 'Could not sign out.',
+              ),
+            );
+          }}
+        />
+      </View>
+    );
   const peopleProps = {
     data,
     onSaveMember: saveMember,
@@ -194,14 +242,54 @@ function Main() {
         <Tabs.Screen name="Churches">
           {() => <ChurchesScreen {...peopleProps} />}
         </Tabs.Screen>
+        <Tabs.Screen name="Account" component={AccountScreen} />
       </Tabs.Navigator>
       <ContributionSheets
         data={data}
         onChange={setData}
+        previewPayment={previewPayment}
         flow={flow}
         onDismiss={() => setFlow(null)}
       />
     </NavigationContainer>
+  );
+}
+function AccountScreen() {
+  const { user, baseUrl, signOut } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const logout = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await signOut();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Could not sign out. Please try again.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <AppScreen scroll title="Account" contentContainerStyle={styles.account}>
+      <AppText variant="heading">{user?.name}</AppText>
+      <AppText>{user?.phone}</AppText>
+      <AppText muted>{user?.role.replace(/_/g, ' ')}</AppText>
+      <AppText muted>Server: {baseUrl}</AppText>
+      {error ? <AppText accessibilityRole="alert">{error}</AppText> : null}
+      <AppButton
+        title="Sign out"
+        variant="outline"
+        loading={busy}
+        disabled={busy}
+        onPress={() => {
+          logout();
+        }}
+      />
+    </AppScreen>
   );
 }
 export default function App() {
@@ -211,9 +299,13 @@ export default function App() {
         <AppThemeProvider>
           <AppErrorBoundary>
             <AppBottomSheetProvider>
-              <ContributionsProvider>
-                <Main />
-              </ContributionsProvider>
+              <AuthProvider>
+                <AuthGate>
+                  <ContributionsProvider>
+                    <Main />
+                  </ContributionsProvider>
+                </AuthGate>
+              </AuthProvider>
             </AppBottomSheetProvider>
           </AppErrorBoundary>
         </AppThemeProvider>
@@ -221,4 +313,9 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
-const styles = StyleSheet.create({ fill: { flex: 1 } });
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center' },
+  centerText: { textAlign: 'center' },
+  account: { padding: 20, gap: 12 },
+});
